@@ -1,9 +1,12 @@
 {
-  "name": "ph-health-care-starter",
+  "name": "DHM-health-care-starter",
   "version": "1.0.0",
   "main": "server.js",
-  "author": "shafayat",
+  "author": "Hridoy",
   "license": "MIT",
+  "prisma":{
+    "schema": "./prisma/schema/schema.prisma"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts"
   },

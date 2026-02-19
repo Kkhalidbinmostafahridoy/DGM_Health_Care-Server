@@ -57,6 +57,7 @@ model Doctor {
 model Patient {
     id            String     @id @default(uuid())
     name          String
+    password      String
     profilePhoto  String?
     email         String     @unique
     contactNumber String?

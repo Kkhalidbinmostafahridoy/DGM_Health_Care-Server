@@ -16,7 +16,7 @@ const createPatient = async (payload: createPatientPayload) => {
       data: {
         name: payload.name,
         email: payload.email,
-        password:
+        password: payload.password,
       },
     });
   });

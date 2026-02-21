@@ -1,7 +1,16 @@
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL CHECK ("id" != ''),
     "email" TEXT NOT NULL,
+    "name" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "User_email_key" ON "User" ("email");
+
+"email" TEXT NOT NULL,
     "name" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -9,4 +18,4 @@ CREATE TABLE "User" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "User_email_key" ON "User" ("email");

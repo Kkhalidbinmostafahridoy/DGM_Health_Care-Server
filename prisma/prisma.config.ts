@@ -1,8 +1,8 @@
-import { defineConfig } from "@prisma/config";
-
-export default defineConfig({
+const config = {
   client: {
     url: process.env.DATABASE_URL,
   },
-  schemaPath: "./prisma/schema/schema.prisma", // ✅ FIXED
-});
+  schemaPath: "./prisma/schema/schema.prisma",
+};
+
+export default config;

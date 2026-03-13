@@ -18,6 +18,7 @@ const createPatientZodValidationSchema = z.object({
     gender: z.enum(["Male", "Female"], {
       error: "required gender value",
     }),
+    profilePhoto: z.string().optional(),
   }),
 });
 

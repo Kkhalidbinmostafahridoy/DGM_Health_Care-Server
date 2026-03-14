@@ -1,10 +1,9 @@
 import { Request } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../../shared/prisma";
-
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import UserStatus from "@prisma/client";
+import { jwtHelper } from "../../../Helper/jwt.helper";
 
 const login = async (payload: { email: string; password: string }) => {
   const user = await prisma.user.findUnique({
@@ -25,12 +24,21 @@ const login = async (payload: { email: string; password: string }) => {
     throw new Error("User not found");
   }
 
-  const accessToken = jwt.sign({ email: user.email, role: user.role }, "abc", {
-    algorithm: "HS256",
-    expiresIn: "1h",
-  });
+  const accessToken = jwtHelper.generateToken(
+    { email: user.email, role: user.role },
+    "abc",
+    "15m",
+  );
+
+  const refreshToken = jwtHelper.generateToken(
+    { email: user.email, role: user.role },
+    "abc123",
+    "7d",
+  );
   return {
     accessToken,
+    refreshToken,
+    needPasswordChange: user.needPasswordChange,
   };
 
   console.log(payload);

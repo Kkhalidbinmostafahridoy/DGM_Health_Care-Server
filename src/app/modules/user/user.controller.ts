@@ -17,7 +17,7 @@ const createPatient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getPatient = catchAsync(async (req: Request, res: Response) => {
-  console.log("get Patient", req.body);
+  // console.log("get Patient", req.body);
 });
 
 export const userController = {

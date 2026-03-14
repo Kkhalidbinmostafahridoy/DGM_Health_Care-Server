@@ -33,7 +33,7 @@ const uploadToCloudinary = async (file: Express.Multer.File) => {
   return uploadResult;
 };
 
-console.log("file from fileUploader", file);
+// console.log("file from fileUploader", file);
 
 export const fileUploader = {
   upload,

@@ -3,10 +3,11 @@ import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
 const cretePatient = async (req: Request) => {
-  if (req.file) {
-    const uploadedResult = await fileUploader.uploadToCloudinary(req.file);
-    req.body.patient.profilePhoto = uploadedResult?.secure_url;
+  if (req?.file) {
+    const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
+    req.body.patient.profilePhoto = uploadedResult?.secure_url as string;
   }
+
   console.log("BODY:", req.body);
   console.log("FILE:", req.file);
   const hashPassword = await bcrypt.hash(req.body.password, 10);

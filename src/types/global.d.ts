@@ -23,6 +23,7 @@ declare var process: any;
 
 declare module "@prisma/client" {
   export class PrismaClient {
+    user: any;
     constructor(arg?: any);
     $connect(): Promise<void>;
     $disconnect(): Promise<void>;

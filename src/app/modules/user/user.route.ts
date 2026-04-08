@@ -15,6 +15,7 @@ const router = express.Router();
     return userController.createPatient(req, res, next);
   },
 ),
+  router.get("/get-all", userController.getAllFromDB),
   router.get("/get-patient", userController.getPatient));
 
 export const userRoutes = router;

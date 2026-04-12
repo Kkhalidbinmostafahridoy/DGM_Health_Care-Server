@@ -17,5 +17,6 @@ const router = express.Router();
 ),
   router.get("/get-all", userController.getAllFromDB),
   router.get("/get-patient", userController.getPatient));
-
+router.post("/admin", userController.getAdmin);
+router.post("/doctor", userController.getDoctor);
 export const userRoutes = router;

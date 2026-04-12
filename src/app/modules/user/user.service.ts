@@ -34,19 +34,41 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
+const getAdmin = async () => {
+  const result = await prisma.user.findMany({
+    where: {
+      role: "admin",
+    },
+  });
+  return result;
+};
+
 const getAllFromDB = async ({
   page,
   limit,
+  searchTerm,
 }: {
   page: number;
   limit: number;
+  searchTerm: string;
 }) => {
   const skip = (page - 1) * limit;
   const result = await prisma.user.findMany({
     skip,
     take: limit,
-    include: {
-      patient: true,
+    where: {
+      email: {
+        contains: searchTerm,
+        mode: "insensitive",
+      },
+    },
+  });
+  return result;
+};
+const getDoctor = async () => {
+  const result = await prisma.user.findMany({
+    where: {
+      role: "doctor",
     },
   });
   return result;
@@ -55,4 +77,6 @@ const getAllFromDB = async ({
 export const UserService = {
   cretePatient,
   getAllFromDB,
+  getDoctor,
+  getAdmin,
 };

@@ -2,6 +2,7 @@ import { Request } from "express";
 import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
+import { email } from "zod";
 const cretePatient = async (req: Request) => {
   if (req?.file) {
     const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
@@ -38,26 +39,38 @@ const getAllFromDB = async ({
   page,
   limit,
   searchTerm,
+  sortBy,
+  sortOrder,
 }: {
   page: number;
   limit: number;
   searchTerm: any;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
-  const pageNum = page || 1;
-  const limitNum = limit || 10;
-  const skip = (pageNum - 1) * limitNum;
+  const pageNumber = page || 1;
+  const pageSize = limit || 10;
+  const skip = (pageNumber - 1) * pageSize;
   const result = await prisma.user.findMany({
     skip,
-    take: limitNum,
+    take: pageSize,
     include: {
       patient: true,
     },
     where: {
-      OR: [
-        { email: { contains: searchTerm, mode: "insensitive" } },
-        { patient: { name: { contains: searchTerm, mode: "insensitive" } } },
-      ],
+      email: {
+        contains: searchTerm,
+        mode: "insensitive",
+      },
     },
+    orderBy:
+      sortBy && sortOrder
+        ? {
+            [sortBy]: sortOrder,
+          }
+        : {
+            createdAt: "desc",
+          },
   });
   return result;
 };

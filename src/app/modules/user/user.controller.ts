@@ -21,11 +21,13 @@ const getPatient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit, searchTerm } = req.query;
+  const { page, limit, searchTerm, sortBy, sortOrder } = req.query;
   const result = await UserService.getAllFromDB({
     page: Number(page),
     limit: Number(limit),
     searchTerm: String(searchTerm),
+    sortBy: String(sortBy),
+    sortOrder: sortOrder as "asc" | "desc" | undefined,
   });
   sendResponse(res, {
     statusCode: 200,

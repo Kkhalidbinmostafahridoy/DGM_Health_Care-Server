@@ -34,15 +34,6 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
-const getAdmin = async () => {
-  const result = await prisma.user.findMany({
-    where: {
-      role: "admin",
-    },
-  });
-  return result;
-};
-
 const getAllFromDB = async ({
   page,
   limit,
@@ -50,25 +41,20 @@ const getAllFromDB = async ({
 }: {
   page: number;
   limit: number;
-  searchTerm: string;
+  searchTerm: any;
 }) => {
   const skip = (page - 1) * limit;
   const result = await prisma.user.findMany({
     skip,
     take: limit,
-    where: {
-      email: {
-        contains: searchTerm,
-        mode: "insensitive",
-      },
+    include: {
+      patient: true,
     },
-  });
-  return result;
-};
-const getDoctor = async () => {
-  const result = await prisma.user.findMany({
     where: {
-      role: "doctor",
+      OR: [
+        { email: { contains: searchTerm, mode: "insensitive" } },
+        { patient: { name: { contains: searchTerm, mode: "insensitive" } } },
+      ],
     },
   });
   return result;
@@ -77,6 +63,4 @@ const getDoctor = async () => {
 export const UserService = {
   cretePatient,
   getAllFromDB,
-  getDoctor,
-  getAdmin,
 };

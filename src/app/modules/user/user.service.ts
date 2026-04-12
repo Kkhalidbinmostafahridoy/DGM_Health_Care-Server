@@ -43,10 +43,12 @@ const getAllFromDB = async ({
   limit: number;
   searchTerm: any;
 }) => {
-  const skip = (page - 1) * limit;
+  const pageNum = page || 1;
+  const limitNum = limit || 10;
+  const skip = (pageNum - 1) * limitNum;
   const result = await prisma.user.findMany({
     skip,
-    take: limit,
+    take: limitNum,
     include: {
       patient: true,
     },

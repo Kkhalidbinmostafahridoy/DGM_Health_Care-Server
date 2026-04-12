@@ -20,17 +20,14 @@ const getPatient = catchAsync(async (req: Request, res: Response) => {
   // console.log("get Patient", req.body);
 });
 
-const getAdmin = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.getAdmin();
-  console.log("get Admin", result);
-});
-
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit, searchTerm } = req.query;
+  const { page, limit, searchTerm, sortBy, sortOrder } = req.query;
   const result = await UserService.getAllFromDB({
     page: Number(page),
     limit: Number(limit),
     searchTerm: String(searchTerm),
+    sortBy: String(sortBy),
+    sortOrder: sortOrder as "asc" | "desc" | undefined,
   });
   sendResponse(res, {
     statusCode: 200,
@@ -40,15 +37,8 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDoctor = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.getDoctor();
-  console.log("get Doctor", result);
-});
-
 export const userController = {
   createPatient,
   getPatient,
   getAllFromDB,
-  getDoctor,
-  getAdmin,
 };

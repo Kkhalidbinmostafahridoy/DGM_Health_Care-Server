@@ -2,6 +2,7 @@ import { Request } from "express";
 import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
+import { email } from "zod";
 const cretePatient = async (req: Request) => {
   if (req?.file) {
     const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
@@ -34,42 +35,42 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
-const getAdmin = async () => {
-  const result = await prisma.user.findMany({
-    where: {
-      role: "admin",
-    },
-  });
-  return result;
-};
-
 const getAllFromDB = async ({
   page,
   limit,
   searchTerm,
+  sortBy,
+  sortOrder,
 }: {
   page: number;
   limit: number;
-  searchTerm: string;
+  searchTerm: any;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
-  const skip = (page - 1) * limit;
+  const pageNumber = page || 1;
+  const pageSize = limit || 10;
+  const skip = (pageNumber - 1) * pageSize;
   const result = await prisma.user.findMany({
     skip,
-    take: limit,
+    take: pageSize,
+    include: {
+      patient: true,
+    },
     where: {
       email: {
         contains: searchTerm,
         mode: "insensitive",
       },
     },
-  });
-  return result;
-};
-const getDoctor = async () => {
-  const result = await prisma.user.findMany({
-    where: {
-      role: "doctor",
-    },
+    orderBy:
+      sortBy && sortOrder
+        ? {
+            [sortBy]: sortOrder,
+          }
+        : {
+            createdAt: "desc",
+          },
   });
   return result;
 };
@@ -77,6 +78,4 @@ const getDoctor = async () => {
 export const UserService = {
   cretePatient,
   getAllFromDB,
-  getDoctor,
-  getAdmin,
 };

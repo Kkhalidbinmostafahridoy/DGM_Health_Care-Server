@@ -41,8 +41,18 @@ const getAllFromDB = async (params: {
   searchTerm?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  UserRole?: string;
+  status?: string;
 }) => {
-  const { page = 1, limit = 10, searchTerm, sortBy, sortOrder } = params;
+  const {
+    page = 1,
+    limit = 10,
+    searchTerm,
+    sortBy,
+    sortOrder,
+    UserRole,
+    status,
+  } = params;
 
   const skip = (Number(page) - 1) * Number(limit);
   const take = Number(limit);
@@ -52,6 +62,8 @@ const getAllFromDB = async (params: {
     ? {
         OR: [
           { email: { contains: searchTerm, mode: "insensitive" as const } },
+          { status: status },
+          { UserRole: UserRole },
           {
             patient: {
               name: { contains: searchTerm, mode: "insensitive" as const },

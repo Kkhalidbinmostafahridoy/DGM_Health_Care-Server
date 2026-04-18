@@ -21,29 +21,24 @@ const getPatient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-  // Extract queries and provide defaults or handle undefined
-  const page = req.query.page ? Number(req.query.page) : 1;
-  const limit = req.query.limit ? Number(req.query.limit) : 10;
-  const searchTerm = req.query.searchTerm as string | undefined;
-  const sortBy = req.query.sortBy as string | undefined;
-  const sortOrder = (req.query.sortOrder as "asc" | "desc") || "desc";
-
-  // Clean the searchTerm: if it's the string "undefined", make it undefined
-  const cleanedSearch = searchTerm === "undefined" ? undefined : searchTerm;
+  const { page, limit, searchTerm, sortBy, sortOrder, UserRole, status } =
+    req.query;
 
   const result = await UserService.getAllFromDB({
-    page,
-    limit,
-    searchTerm: cleanedSearch,
-    sortBy,
-    sortOrder,
+    page: page ? Number(page) : undefined,
+    limit: limit ? Number(limit) : undefined,
+    searchTerm: searchTerm as string,
+    sortBy: sortBy as string,
+    sortOrder: sortOrder as "asc" | "desc",
+    UserRole: UserRole as string,
+    status: status as string,
   });
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Users retrieved successfully",
-    meta: result.meta, // Added metadata for pagination
+    meta: result.meta,
     data: result.data,
   });
 });

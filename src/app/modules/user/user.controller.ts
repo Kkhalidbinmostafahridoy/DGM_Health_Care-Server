@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "../../shared/catchAsync";
 import { UserService } from "./user.service";
 import sendResponse from "../../shared/sendResponse";
+import pick from "../../Helper/pick";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.cretePatient(req);
@@ -21,29 +22,20 @@ const getPatient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-  // Extract queries and provide defaults or handle undefined
-  const page = req.query.page ? Number(req.query.page) : 1;
-  const limit = req.query.limit ? Number(req.query.limit) : 10;
-  const searchTerm = req.query.searchTerm as string | undefined;
-  const sortBy = req.query.sortBy as string | undefined;
-  const sortOrder = (req.query.sortOrder as "asc" | "desc") || "desc";
+  //page,limit,sortBy,sortOrder-pagination and sorting
+  //searchTerm - searching
+  //UserRole, status - filtering
+  //fields :searchTerm,filtering
+  const filters = pick(req.query, ["email", "UserRole", "status"]);
+  const options = pick(req.query, ["page", "limit", "sortby", "sortOrder"]);
 
-  // Clean the searchTerm: if it's the string "undefined", make it undefined
-  const cleanedSearch = searchTerm === "undefined" ? undefined : searchTerm;
-
-  const result = await UserService.getAllFromDB({
-    page,
-    limit,
-    searchTerm: cleanedSearch,
-    sortBy,
-    sortOrder,
-  });
+  const result = await UserService.getAllFromDB(filters, options);
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "Users retrieved successfully",
-    meta: result.meta, // Added metadata for pagination
+    meta: result.meta,
     data: result.data,
   });
 });

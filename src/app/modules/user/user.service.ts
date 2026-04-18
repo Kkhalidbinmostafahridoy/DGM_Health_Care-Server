@@ -35,44 +35,56 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
-const getAllFromDB = async ({
-  page,
-  limit,
-  searchTerm,
-  sortBy,
-  sortOrder,
-}: {
-  page: number;
-  limit: number;
-  searchTerm: any;
+const getAllFromDB = async (params: {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }) => {
-  const pageNumber = page || 1;
-  const pageSize = limit || 10;
-  const skip = (pageNumber - 1) * pageSize;
+  const { page = 1, limit = 10, searchTerm, sortBy, sortOrder } = params;
+
+  const skip = (Number(page) - 1) * Number(limit);
+  const take = Number(limit);
+
+  // Build dynamic where conditions
+  const whereConditions = searchTerm
+    ? {
+        OR: [
+          { email: { contains: searchTerm, mode: "insensitive" as const } },
+          {
+            patient: {
+              name: { contains: searchTerm, mode: "insensitive" as const },
+            },
+          },
+        ],
+      }
+    : {};
+
+  // Build dynamic sorting
+  const orderBy =
+    sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" };
+
   const result = await prisma.user.findMany({
+    where: whereConditions,
     skip,
-    take: pageSize,
+    take,
     include: {
       patient: true,
     },
-    where: {
-      email: {
-        contains: searchTerm,
-        mode: "insensitive",
-      },
-    },
-    orderBy:
-      sortBy && sortOrder
-        ? {
-            [sortBy]: sortOrder,
-          }
-        : {
-            createdAt: "desc",
-          },
+    orderBy,
   });
-  return result;
+
+  const total = await prisma.user.count({ where: whereConditions });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
+  };
 };
 
 export const UserService = {

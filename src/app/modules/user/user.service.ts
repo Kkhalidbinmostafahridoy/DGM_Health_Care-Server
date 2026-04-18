@@ -35,27 +35,13 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
-const getAllFromDB = async (params: {
-  page?: number;
-  limit?: number;
-  searchTerm?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  UserRole?: string;
-  status?: string;
-}) => {
-  const {
-    page = 1,
-    limit = 10,
-    searchTerm,
-    sortBy,
-    sortOrder,
-    UserRole,
-    status,
-  } = params;
+const getAllFromDB = async (param: any, options: any) => {
+  const pageNumber = options.page || 1;
+  const limitNumber = options.limit || 10;
+  const searchTerm = param.searchTerm || "";
 
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+  const take = limitNumber;
 
   // Build dynamic where conditions
   const whereConditions = searchTerm

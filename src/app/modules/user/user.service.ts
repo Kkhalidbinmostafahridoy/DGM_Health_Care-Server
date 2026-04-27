@@ -36,6 +36,9 @@ const cretePatient = async (req: Request) => {
 };
 
 const getAllFromDB = async (param: any, options: any) => {
+  const { page, limit, sortBy, sortOrder, skip, take } =
+    paginationHelper.calculatePagination(options);
+
   const pageNumber = Number(options.page) || 1;
   const limitNumber = Number(options.limit) || 10;
 

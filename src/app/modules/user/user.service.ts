@@ -36,20 +36,22 @@ const cretePatient = async (req: Request) => {
 };
 
 const getAllFromDB = async (param: any, options: any) => {
-  const pageNumber = options.page || 1;
-  const limitNumber = options.limit || 10;
+  const pageNumber = Number(options.page) || 1;
+  const limitNumber = Number(options.limit) || 10;
+
   const searchTerm = param.searchTerm || "";
+  const sortBy = param.sortBy || "";
+  const sortOrder = param.sortOrder || "desc";
 
   const skip = (pageNumber - 1) * limitNumber;
   const take = limitNumber;
 
-  // Build dynamic where conditions
   const whereConditions = searchTerm
     ? {
         OR: [
           { email: { contains: searchTerm, mode: "insensitive" as const } },
-          { status: status },
-          { UserRole: UserRole },
+          { status: param.status },
+          { UserRole: param.UserRole },
           {
             patient: {
               name: { contains: searchTerm, mode: "insensitive" as const },
@@ -59,7 +61,6 @@ const getAllFromDB = async (param: any, options: any) => {
       }
     : {};
 
-  // Build dynamic sorting
   const orderBy =
     sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" };
 
@@ -77,14 +78,13 @@ const getAllFromDB = async (param: any, options: any) => {
 
   return {
     meta: {
-      page,
-      limit,
+      page: pageNumber,
+      limit: limitNumber,
       total,
     },
     data: result,
   };
 };
-
 export const UserService = {
   cretePatient,
   getAllFromDB,

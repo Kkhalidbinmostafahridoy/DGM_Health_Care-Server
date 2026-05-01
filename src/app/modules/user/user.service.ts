@@ -2,9 +2,7 @@ import { Request } from "express";
 import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
-import { email } from "zod";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
-import { UserStatus } from "@prisma/client";
 
 const cretePatient = async (req: Request) => {
   if (req?.file) {
@@ -36,6 +34,23 @@ const cretePatient = async (req: Request) => {
   });
 
   return result;
+};
+
+const getDoctor = async () => {
+  const doctors = await prisma.user.findMany({
+    where: {
+      UserRole: "DOCTOR",
+    },
+  });
+  return doctors;
+};
+
+const getAdmins = async () => {
+  return prisma.user.findMany({
+    where: {
+      UserRole: "ADMIN",
+    },
+  });
 };
 
 // const getAllFromDB = async (param: any, options: IOptions) => {
@@ -155,4 +170,6 @@ const getAllFromDB = async (param: any, options: IOptions) => {
 export const UserService = {
   cretePatient,
   getAllFromDB,
+  getAdmins,
+  getDoctor,
 };

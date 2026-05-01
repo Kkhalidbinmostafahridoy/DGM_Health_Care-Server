@@ -3,6 +3,7 @@ import catchAsync from "../../shared/catchAsync";
 import { UserService } from "./user.service";
 import sendResponse from "../../shared/sendResponse";
 import pick from "../../Helper/pick";
+import { get } from "http";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.cretePatient(req);
@@ -13,6 +14,28 @@ const createPatient = catchAsync(async (req: Request, res: Response) => {
     statusCode: 200,
     success: true,
     message: "Patient created successfully",
+    data: result,
+  });
+});
+
+const getAdmins = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getAdmins();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Admins retrieved successfully",
+    data: result,
+  });
+});
+
+const getDoctors = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getDoctor();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Doctors retrieved successfully",
     data: result,
   });
 });
@@ -48,4 +71,6 @@ export const userController = {
   createPatient,
   getPatient,
   getAllFromDB,
+  getAdmins,
+  getDoctors,
 };

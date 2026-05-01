@@ -29,4 +29,12 @@ declare module "@prisma/client" {
     $disconnect(): Promise<void>;
   }
   export const Prisma: any;
+
+  export function DOCTOR(ADMIN: any, DOCTOR: any) {
+    throw new Error("Function not implemented.");
+  }
+
+  export function ADMIN(ADMIN: any, DOCTOR: (ADMIN: any, DOCTOR: any) => void) {
+    throw new Error("Function not implemented.");
+  }
 }

@@ -25,8 +25,26 @@ router.get(
 ),
   router.get("/get-all", userController.getAllFromDB),
   router.get("/get-patient", userController.getPatient));
+router.post(
+  "/admins",
+  fileUploader.upload.single("file"),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.body?.data) {
+        throw new Error("Body data is required");
+      }
 
-router.get("/admins", userController.getAdmins);
+      const parsedData = JSON.parse(req.body.data);
+
+      req.body =
+        UserValidation.createPatientZodValidationSchema.parse(parsedData);
+
+      return userController.createAdmin(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 router.get("/doctors", userController.getDoctors);
 
 export const userRoutes = router;

@@ -44,13 +44,37 @@ const getDoctor = async () => {
   });
   return doctors;
 };
+const getAdmins = async (
+  req: Request,
+  file: Express.Multer.File | undefined,
+) => {
+  if (req?.file) {
+    const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
+    req.body.patient.profilePhoto = uploadedResult?.secure_url as string;
+  }
+  console.log("BODY:", req.body);
+  console.log("FILE:", req.file);
 
-const getAdmins = async () => {
-  return prisma.user.findMany({
-    where: {
-      UserRole: "ADMIN",
-    },
+  const hashPassword = await bcrypt.hash(req.body.password, 10);
+  const result = await prisma.$transaction(async (tnx) => {
+    // 1️⃣ Create User
+    const user = await tnx.user.create({
+      data: {
+        email: req.body.patient.email,
+        password: hashPassword,
+        UserRole: "ADMIN",
+      },
+    });
+    const admin = await tnx.admin.create({
+      data: {
+        ...req.body.admin,
+        password: hashPassword,
+        userId: user.id,
+      },
+    });
+    return { user, admin };
   });
+  return result;
 };
 
 // const getAllFromDB = async (param: any, options: IOptions) => {

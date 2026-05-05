@@ -18,16 +18,10 @@ const createPatient = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getAdmins = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.getAdmins();
-
-  sendResponse(res, {
-    statusCode: 200,
-    success: true,
-    message: "Admins retrieved successfully",
-    data: result,
-  });
-});
+const createAdmin = async (data: any, file?: Express.Multer.File) => {
+  const result = await UserService.getAdmins(data, file);
+  return result;
+};
 
 const getDoctors = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getDoctor();
@@ -71,6 +65,6 @@ export const userController = {
   createPatient,
   getPatient,
   getAllFromDB,
-  getAdmins,
+  createAdmin,
   getDoctors,
 };

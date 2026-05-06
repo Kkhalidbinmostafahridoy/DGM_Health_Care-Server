@@ -22,6 +22,20 @@ const createPatientZodValidationSchema = z.object({
   }),
 });
 
+const createAdminZodValidationSchema = z.object({
+  password: z.string(),
+  admin: z.object({
+    name: z.string({
+      error: "Name is required",
+    }),
+    email: z.string({
+      error: "Email is required",
+    }),
+    profilePhoto: z.string().optional(),
+  }),
+});
+
 export const UserValidation = {
   createPatientZodValidationSchema,
+  createAdminZodValidationSchema,
 };

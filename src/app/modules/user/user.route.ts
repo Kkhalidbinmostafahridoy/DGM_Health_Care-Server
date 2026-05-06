@@ -30,20 +30,23 @@ router.post(
   fileUploader.upload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!req.body?.data) {
-        throw new Error("Body data is required");
-      }
+      console.log("BODY:", req.body);
 
-      const parsedData = JSON.parse(req.body.data);
+      const data = req.body.data || req.body;
 
-      req.body =
-        UserValidation.createPatientZodValidationSchema.parse(parsedData);
+      const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
-      return userController.createAdmin(req, res, next);
+      const validated =
+        UserValidation.createAdminZodValidationSchema.parse(parsedData);
+
+      req.body = validated;
+
+      next();
     } catch (error) {
       next(error);
     }
   },
+  userController.createAdmin,
 );
 router.get("/doctors", userController.getDoctors);
 

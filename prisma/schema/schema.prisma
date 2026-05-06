@@ -27,6 +27,7 @@ model Admin {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
+  password      String
   profilePhoto  String?
   contactNumber String?
   isDeleted     Boolean  @default(false)

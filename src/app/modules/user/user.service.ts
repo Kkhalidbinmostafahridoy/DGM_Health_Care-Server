@@ -44,36 +44,41 @@ const getDoctor = async () => {
   });
   return doctors;
 };
-const getAdmins = async (
-  req: Request,
-  file: Express.Multer.File | undefined,
-) => {
-  if (req?.file) {
-    const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
-    req.body.patient.profilePhoto = uploadedResult?.secure_url as string;
-  }
-  console.log("BODY:", req.body);
-  console.log("FILE:", req.file);
 
-  const hashPassword = await bcrypt.hash(req.body.password, 10);
-  const result = await prisma.$transaction(async (tnx) => {
-    // 1️⃣ Create User
-    const user = await tnx.user.create({
+const createAdmin = async (req: Request) => {
+  // ✅ Upload image (if exists)
+  if (req.file) {
+    const uploaded = await fileUploader.uploadToCloudinary(req.file);
+
+    // ensure admin object exists
+    if (!req.body.admin) req.body.admin = {};
+
+    req.body.admin.profilePhoto = uploaded?.secure_url;
+  }
+
+  // ✅ Hash password
+  const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
       data: {
-        email: req.body.patient.email,
-        password: hashPassword,
+        email: req.body.admin.email,
+        password: hashedPassword,
         UserRole: "ADMIN",
       },
     });
-    const admin = await tnx.admin.create({
+
+    const admin = await tx.admin.create({
       data: {
         ...req.body.admin,
-        password: hashPassword,
+        password: hashedPassword,
         userId: user.id,
       },
     });
+
     return { user, admin };
   });
+
   return result;
 };
 
@@ -194,6 +199,6 @@ const getAllFromDB = async (param: any, options: IOptions) => {
 export const UserService = {
   cretePatient,
   getAllFromDB,
-  getAdmins,
+  createAdmin,
   getDoctor,
 };

@@ -3,7 +3,7 @@ import catchAsync from "../../shared/catchAsync";
 import { UserService } from "./user.service";
 import sendResponse from "../../shared/sendResponse";
 import pick from "../../Helper/pick";
-import { get } from "http";
+import * as jwt from "jsonwebtoken";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.cretePatient(req);
@@ -18,10 +18,33 @@ const createPatient = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const createAdmin = async (data: any, file?: Express.Multer.File) => {
-  const result = await UserService.getAdmins(data, file);
-  return result;
-};
+const createAdmin = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.createAdmin(req);
+
+  // ✅ Create token
+  const token = jwt.sign(
+    {
+      userId: result.user.id,
+      role: result.user.UserRole,
+    },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "7d" },
+  );
+
+  // ✅ Set cookie
+  res.cookie("accessToken", token, {
+    httpOnly: true,
+    secure: false, // true in production
+    sameSite: "lax",
+  });
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Admin created successfully",
+    data: result,
+  });
+});
 
 const getDoctors = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getDoctor();

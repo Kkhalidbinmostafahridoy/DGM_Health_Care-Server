@@ -27,6 +27,7 @@ router.get(
   router.get("/get-patient", userController.getPatient));
 router.post(
   "/admins",
+  auth(UserRole?.ADMIN as any),
   fileUploader.upload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -48,6 +49,25 @@ router.post(
   },
   userController.createAdmin,
 );
-router.get("/doctors", userController.getDoctors);
+router.post(
+  "/doctors",
+  auth(UserRole?.ADMIN as any),
+  fileUploader.upload.single("file"),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log("BODY:", req.body);
+      console.log("FILE:", req.file);
+
+      const data = req.body.data || req.body;
+      const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+
+      req.body = parsedData;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
+  userController.createDoctor,
+);
 
 export const userRoutes = router;

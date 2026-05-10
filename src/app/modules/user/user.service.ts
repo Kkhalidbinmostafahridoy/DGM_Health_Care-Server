@@ -3,6 +3,7 @@ import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
+import UserGender from "@prisma/client";
 
 const cretePatient = async (req: Request) => {
   if (req?.file) {
@@ -15,7 +16,7 @@ const cretePatient = async (req: Request) => {
   const hashPassword = await bcrypt.hash(req.body.password, 10);
 
   // for multipple query we can use transaction
-  const result = await prisma.$transaction(async (tnx) => {
+  const result = await prisma.$transaction(async (tnx: any) => {
     // 1️⃣ Create User
     const user = await tnx.user.create({
       data: {
@@ -36,13 +37,51 @@ const cretePatient = async (req: Request) => {
   return result;
 };
 
-const getDoctor = async () => {
-  const doctors = await prisma.user.findMany({
-    where: {
-      UserRole: "DOCTOR",
-    },
+const createDoctor = async (req: Request) => {
+  if (req?.file) {
+    const uploadedResult = await fileUploader.uploadToCloudinary(req.file);
+
+    req.body.profilePhoto = uploadedResult?.secure_url as string;
+  }
+
+  console.log("BODY:", req.body);
+
+  // ✅ FIX HERE
+  const hashPassword = await bcrypt.hash(req.body.password, 10);
+
+  const result = await prisma.$transaction(async (tnx: any) => {
+    const user = await tnx.user.create({
+      data: {
+        email: req.body.email,
+        password: hashPassword,
+        UserRole: "DOCTOR",
+      },
+    });
+    const genderValue =
+      req.body.gender === "Male" ? UserGender.Male : UserGender.Female;
+    console.log("gender", genderValue);
+
+    const doctor = await tnx.doctor.create({
+      data: {
+        email: req.body.email,
+        name: req.body.name,
+        address: req.body.address,
+        registrationNumber: req.body.registrationNumber,
+        appointmentFee: Number(req.body.appointmentFee),
+        qualifications: req.body.qualifications,
+        currentlyWorkingAt: req.body.currentlyWorkingAt,
+        designation: req.body.designation,
+        userId: user.id,
+
+        // ✅ FIXED HERE
+        gender: genderValue,
+      },
+    });
+
+    return { user, doctor };
   });
-  return doctors;
+
+  return result;
 };
 
 const createAdmin = async (req: Request) => {
@@ -56,11 +95,20 @@ const createAdmin = async (req: Request) => {
     req.body.admin.profilePhoto = uploaded?.secure_url;
   }
 
+  const existingEmail = await prisma.user.findUnique({
+    where: {
+      email: req.body.admin.email,
+    },
+  });
+  if (existingEmail) {
+    throw new Error("Email already exists");
+  }
+
   // ✅ Hash password
   const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
+  const result = await prisma.$transaction(async (tnx: any) => {
+    const user = await tnx.user.create({
       data: {
         email: req.body.admin.email,
         password: hashedPassword,
@@ -68,7 +116,7 @@ const createAdmin = async (req: Request) => {
       },
     });
 
-    const admin = await tx.admin.create({
+    const admin = await tnx.admin.create({
       data: {
         ...req.body.admin,
         password: hashedPassword,
@@ -200,5 +248,5 @@ export const UserService = {
   cretePatient,
   getAllFromDB,
   createAdmin,
-  getDoctor,
+  createDoctor,
 };

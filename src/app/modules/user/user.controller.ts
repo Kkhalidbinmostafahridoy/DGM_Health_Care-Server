@@ -46,8 +46,23 @@ const createAdmin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getDoctors = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.getDoctor();
+const createDoctor = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.createDoctor(req);
+
+  const token = jwt.sign(
+    {
+      userId: result.user.id,
+      role: result.user.UserRole,
+    },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "7d" },
+  );
+
+  res.cookie("accessToken", token, {
+    httpOnly: true,
+    secure: false, // true in production
+    sameSite: "lax",
+  });
 
   sendResponse(res, {
     statusCode: 200,
@@ -89,5 +104,5 @@ export const userController = {
   getPatient,
   getAllFromDB,
   createAdmin,
-  getDoctors,
+  createDoctor,
 };

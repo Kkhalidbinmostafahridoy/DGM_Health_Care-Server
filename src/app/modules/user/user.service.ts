@@ -3,7 +3,7 @@ import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
-import UserGender from "@prisma/client";
+import { UserGender } from "@prisma/client";
 
 const cretePatient = async (req: Request) => {
   if (req?.file) {
@@ -72,8 +72,6 @@ const createDoctor = async (req: Request) => {
         currentlyWorkingAt: req.body.currentlyWorkingAt,
         designation: req.body.designation,
         userId: user.id,
-
-        // ✅ FIXED HERE
         gender: genderValue,
       },
     });

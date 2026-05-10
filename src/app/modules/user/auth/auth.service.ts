@@ -25,14 +25,14 @@ const login = async (payload: { email: string; password: string }) => {
   }
 
   const accessToken = jwtHelper.generateToken(
-    { email: user.email, role: user.role },
-    "abc",
+    { email: user.email, role: user.UserRole },
+    process.env.JWT_SECRET as string,
     "15m",
   );
 
   const refreshToken = jwtHelper.generateToken(
-    { email: user.email, role: user.role },
-    "abc123",
+    { email: user.email, role: user.UserRole },
+    process.env.JWT_SECRET as string,
     "7d",
   );
   return {

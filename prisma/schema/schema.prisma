@@ -64,15 +64,34 @@ model Doctor {
   @@map("doctors")
 }
 
+// model Patient {
+//   id            String     @id @default(uuid())
+//   name          String
+//   password      String
+//   profilePhoto  String?
+//   email         String     @unique
+//   contactNumber String?
+//   age           Int
+//   // address       String
+//   gender        UserGender
+//   isDeleted     Boolean    @default(false)
+//   createdAt     DateTime   @default(now())
+//   updatedAt     DateTime   @updatedAt
+//   userId        String     @unique
+
+//   user User @relation(fields: [userId], references: [id])
+
+//   @@map("patients")
+// }
+
 model Patient {
   id            String     @id @default(uuid())
   name          String
-  password      String
   profilePhoto  String?
   email         String     @unique
   contactNumber String?
+  address       String?
   age           Int
-  address       String
   gender        UserGender
   isDeleted     Boolean    @default(false)
   createdAt     DateTime   @default(now())

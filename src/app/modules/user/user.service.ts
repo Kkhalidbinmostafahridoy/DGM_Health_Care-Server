@@ -3,39 +3,129 @@ import { prisma } from "../../shared/prisma";
 import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
-import UserGender from "@prisma/client";
+import { UserGender } from "@prisma/client";
 
-const cretePatient = async (req: Request) => {
-  if (req?.file) {
-    const uploadedResult = await fileUploader.uploadToCloudinary(req?.file);
-    req.body.patient.profilePhoto = uploadedResult?.secure_url as string;
+// create patient (admin and doctor only)
+// const createPatient = async (req: Request) => {
+//   const body = req.body;
+//   const patient = body.patient;
+
+//   console.log("SERVICE BODY:", body);
+
+//   // ✅ VALIDATION
+//   if (!patient?.email) {
+//     throw new Error("Patient email is missing");
+//   }
+
+//   console.log("EMAIL:", patient.email);
+
+//   // upload file
+//   let profilePhoto = null;
+
+//   if (req.file) {
+//     const uploaded = await fileUploader.uploadToCloudinary(req.file);
+
+//     profilePhoto = uploaded?.secure_url;
+//   }
+
+//   // check email
+//   const existingEmail = await prisma.user.findUnique({
+//     where: {
+//       email: patient?.email,
+//     },
+//   });
+
+//   if (existingEmail) {
+//     throw new Error("Email already exists");
+//   }
+
+//   const hashedPassword = await bcrypt.hash(body.password, 10);
+
+//   const result = await prisma.$transaction(async (tnx: any) => {
+//     const user = await tnx.user.create({
+//       data: {
+//         email: patient?.email,
+//         password: hashedPassword,
+//         role: "PATIENT", // ✅ FIXED
+//       },
+//     });
+
+//     const patientData = await tnx.patient.create({
+//       data: {
+//         name: patient.name,
+//         email: patient.email,
+//         age: Number(patient.age),
+//         address: patient.address,
+//         gender: patient.gender,
+//         profilePhoto,
+//         userId: user.id,
+//       },
+//     });
+
+//     return {
+//       user,
+//       patient: patientData,
+//     };
+//   });
+
+//   return result;
+// };
+
+const createPatient = async (req: Request) => {
+  // 1. Extract the nested data safely
+  const { patient: patientInfo, password } = req.body;
+
+  // 2. Validate existence before calling Prisma
+  if (!patientInfo || !patientInfo.email) {
+    throw new Error("Patient data or email is missing in request body");
   }
 
-  console.log("BODY:", req.body);
-  console.log("FILE:", req.file);
-  const hashPassword = await bcrypt.hash(req.body.password, 10);
+  // 3. Handle File Upload
+  let profilePhoto = null;
+  if (req.file) {
+    const uploaded = await fileUploader.uploadToCloudinary(req.file);
+    profilePhoto = uploaded?.secure_url || null;
+  }
 
-  // for multipple query we can use transaction
-  const result = await prisma.$transaction(async (tnx: any) => {
-    // 1️⃣ Create User
+  // 4. Check for existing user
+  const existingEmail = await prisma.user.findUnique({
+    where: {
+      email: patientInfo.email,
+    },
+  });
+
+  if (existingEmail) {
+    throw new Error("Email already exists");
+  }
+
+  // 5. Hash Password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // 6. Transaction
+  const result = await prisma.$transaction(async (tnx) => {
     const user = await tnx.user.create({
       data: {
-        email: req.body.patient.email,
-        password: hashPassword,
+        email: patientInfo.email,
+        password: hashedPassword,
+        UserRole: "PATIENT",
       },
     });
-    const patient = await tnx.patient.create({
+
+    const patientData = await tnx.patient.create({
       data: {
-        ...req.body.patient,
-        password: hashPassword,
+        ...patientInfo, // Spreads name, email, age, etc.
+        age: Number(patientInfo.age), // Ensure it's a number
+        profilePhoto: profilePhoto, // Add the cloudinary URL
         userId: user.id,
       },
     });
-    return { user, patient };
+
+    return { user, patient: patientData };
   });
 
   return result;
 };
+// doctor create doctor (admin only)
 
 const createDoctor = async (req: Request) => {
   if (req?.file) {
@@ -72,8 +162,6 @@ const createDoctor = async (req: Request) => {
         currentlyWorkingAt: req.body.currentlyWorkingAt,
         designation: req.body.designation,
         userId: user.id,
-
-        // ✅ FIXED HERE
         gender: genderValue,
       },
     });
@@ -83,7 +171,8 @@ const createDoctor = async (req: Request) => {
 
   return result;
 };
-
+//
+// admin create doctor (admin only)
 const createAdmin = async (req: Request) => {
   // ✅ Upload image (if exists)
   if (req.file) {
@@ -130,58 +219,7 @@ const createAdmin = async (req: Request) => {
   return result;
 };
 
-// const getAllFromDB = async (param: any, options: IOptions) => {
-//   const { page, limit, sortBy, sortOrder, skip, take } =
-//     paginationHelper.calculatePagination(options);
-
-//   const { searchTerm, status, ...filterData } = param;
-
-//   const andConditions = [];
-
-//   if (status) {
-//     andConditions.push({ UserStatus: status });
-//   }
-
-//   const whereConditions = searchTerm
-//     ? {
-//         OR: [
-//           { email: { contains: searchTerm, mode: "insensitive" as const } },
-//           { status: param.status },
-//           { UserRole: param.UserRole },
-//           {
-//             patient: {
-//               name: { contains: searchTerm, mode: "insensitive" as const },
-//             },
-//           },
-//         ],
-//       }
-//     : {};
-
-//   const orderBy =
-//     sortBy && sortOrder ? { [sortBy]: sortOrder } : { createdAt: "desc" };
-
-//   const result = await prisma.user.findMany({
-//     where: whereConditions,
-//     skip,
-//     take,
-//     include: {
-//       patient: true,
-//     },
-//     orderBy,
-//   });
-
-//   const total = await prisma.user.count({ where: whereConditions });
-
-//   return {
-//     meta: {
-//       page,
-//       limit,
-//       total,
-//     },
-//     data: result,
-//   };
-// };
-
+// getallfrombd (admin and doctor only)
 const getAllFromDB = async (param: any, options: IOptions) => {
   const { page, limit, sortBy, sortOrder, skip, take } =
     paginationHelper.calculatePagination(options);
@@ -244,8 +282,9 @@ const getAllFromDB = async (param: any, options: IOptions) => {
     data: result,
   };
 };
+
 export const UserService = {
-  cretePatient,
+  createPatient,
   getAllFromDB,
   createAdmin,
   createDoctor,

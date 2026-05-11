@@ -12,7 +12,7 @@ export const auth = (...roles: string[]) => {
       if (!token) {
         throw new Error("You are not authorize");
       }
-      const verifyUser = jwtHelper.verifyToken(token, "abc");
+      const verifyUser = jwtHelper.verifyToken(token, process.env.JWT_SECRET as string);
       req.user = verifyUser;
       if (roles.length && !roles.includes(verifyUser.role)) {
         throw new Error("You are not authorize to access this route");

@@ -7,48 +7,69 @@ import { auth } from "../../middlewares/auth";
 
 const router = express.Router();
 
+// get all users (admin and doctor only)
 router.get(
   "/",
   auth(UserRole?.ADMIN as any, UserRole?.DOCTOR as any),
   userController.getAllFromDB,
 );
 
-(router.post(
-  "/create-patient",
-  fileUploader.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    req.body = UserValidation.createPatientZodValidationSchema.parse(
-      JSON.parse(req.body.data),
-    );
-    return userController.createPatient(req, res, next);
-  },
-),
-  router.get("/get-all", userController.getAllFromDB),
-  router.get("/get-patient", userController.getPatient));
+// create patient (admin and doctor only)
 router.post(
-  "/admins",
-  auth(UserRole?.ADMIN as any),
+  "/create-patient",
+  auth(UserRole?.ADMIN as any, UserRole?.DOCTOR as any),
   fileUploader.upload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("BODY:", req.body);
-
       const data = req.body.data || req.body;
-
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
       const validated =
-        UserValidation.createAdminZodValidationSchema.parse(parsedData);
+        UserValidation.createPatientZodValidationSchema.parse(parsedData);
 
       req.body = validated;
-
       next();
     } catch (error) {
       next(error);
     }
   },
-  userController.createAdmin,
+  userController.createPatient,
 );
+
+// get all patients (admin and doctor only)
+(router.get("/get-all", userController.getAllFromDB),
+  router.get("/get-patient", userController.getPatient),
+  //
+  //
+  // admin create doctor
+  router.post(
+    "/admins",
+    auth(UserRole?.ADMIN as any),
+    fileUploader.upload.single("file"),
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        console.log("BODY:", req.body);
+
+        const data = req.body.data || req.body;
+
+        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+
+        const validated =
+          UserValidation.createAdminZodValidationSchema.parse(parsedData);
+
+        req.body = validated;
+
+        next();
+      } catch (error) {
+        next(error);
+      }
+    },
+    userController.createAdmin,
+  ));
+
+//
+//
+// doctor create doctor (admin only)
 router.post(
   "/doctors",
   auth(UserRole?.ADMIN as any),

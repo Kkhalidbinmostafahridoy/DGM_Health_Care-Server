@@ -6,7 +6,7 @@ import pick from "../../Helper/pick";
 import * as jwt from "jsonwebtoken";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.cretePatient(req);
+  const result = await UserService.createPatient(req);
 
   console.log(req);
 

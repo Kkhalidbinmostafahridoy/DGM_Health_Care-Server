@@ -1,3 +1,5 @@
+import { addMinutes, addHours, format } from "date-fns";
+
 const insertIntoDB = async (payload: any) => {
   const { startTime, endTime, startDate, endDate } = payload;
 
@@ -7,7 +9,16 @@ const insertIntoDB = async (payload: any) => {
   const lastDate = new Date(endDate);
 
   while (currentDate <= endDate) {
-    const startDateTime = new Date(currentDate);
+    //time format in schedule
+    const startDateTime = new Date(
+      addMinutes(
+        addHours(
+          `${format(currentDate, "yyyy-mm-dd")}`,
+          Number(startTime.split(":")[0]),
+        ),
+        Number(startTime.split(":")[1]),
+      ),
+    );
   }
 
   console.log({ payload });

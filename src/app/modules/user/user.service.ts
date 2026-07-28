@@ -6,71 +6,6 @@ import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
 import { UserGender } from "@prisma/client";
 
 // create patient (admin and doctor only)
-// const createPatient = async (req: Request) => {
-//   const body = req.body;
-//   const patient = body.patient;
-
-//   console.log("SERVICE BODY:", body);
-
-//   // ✅ VALIDATION
-//   if (!patient?.email) {
-//     throw new Error("Patient email is missing");
-//   }
-
-//   console.log("EMAIL:", patient.email);
-
-//   // upload file
-//   let profilePhoto = null;
-
-//   if (req.file) {
-//     const uploaded = await fileUploader.uploadToCloudinary(req.file);
-
-//     profilePhoto = uploaded?.secure_url;
-//   }
-
-//   // check email
-//   const existingEmail = await prisma.user.findUnique({
-//     where: {
-//       email: patient?.email,
-//     },
-//   });
-
-//   if (existingEmail) {
-//     throw new Error("Email already exists");
-//   }
-
-//   const hashedPassword = await bcrypt.hash(body.password, 10);
-
-//   const result = await prisma.$transaction(async (tnx: any) => {
-//     const user = await tnx.user.create({
-//       data: {
-//         email: patient?.email,
-//         password: hashedPassword,
-//         role: "PATIENT", // ✅ FIXED
-//       },
-//     });
-
-//     const patientData = await tnx.patient.create({
-//       data: {
-//         name: patient.name,
-//         email: patient.email,
-//         age: Number(patient.age),
-//         address: patient.address,
-//         gender: patient.gender,
-//         profilePhoto,
-//         userId: user.id,
-//       },
-//     });
-
-//     return {
-//       user,
-//       patient: patientData,
-//     };
-//   });
-
-//   return result;
-// };
-
 const createPatient = async (req: Request) => {
   // 1. Extract the nested data safely
   const { patient: patientInfo, password } = req.body;
@@ -125,8 +60,10 @@ const createPatient = async (req: Request) => {
 
   return result;
 };
-// doctor create doctor (admin only)
 
+//
+//
+// doctor create doctor (admin only)
 const createDoctor = async (req: Request) => {
   if (req?.file) {
     const uploadedResult = await fileUploader.uploadToCloudinary(req.file);
@@ -218,7 +155,7 @@ const createAdmin = async (req: Request) => {
 
   return result;
 };
-
+//
 // getallfrombd (admin and doctor only)
 const getAllFromDB = async (param: any, options: IOptions) => {
   const { page, limit, sortBy, sortOrder, skip, take } =

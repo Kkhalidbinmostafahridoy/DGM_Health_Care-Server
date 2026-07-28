@@ -86,8 +86,8 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
     "UserRole",
     "status",
     "searchTerm",
-  ]);
-  const options = pick(req.query, ["page", "limit", "sortby", "sortOrder"]);
+  ]); //searching ,filtering
+  const options = pick(req.query, ["page", "limit", "sortby", "sortOrder"]); //pagination, sorting
 
   const result = await UserService.getAllFromDB(filters, options);
 

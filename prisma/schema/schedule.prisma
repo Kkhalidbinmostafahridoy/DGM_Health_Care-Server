@@ -1,4 +1,4 @@
-model schedule {
+model Schedule {
     id              String           @id @default(uuid())
     startDateTime   DateTime
     endDateTime     DateTime

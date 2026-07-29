@@ -1,9 +1,10 @@
 import { addMinutes, addHours, format } from "date-fns";
 import { prisma } from "../../shared/prisma";
+import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
+import { Prisma } from "@prisma/client/extension";
 
 const insertIntoDB = async (payload: any) => {
   const { startTime, endTime, startDate, endDate } = payload;
-  console.log({ startDate, endDate, startTime, endTime });
 
   const intervalTime = 30;
 
@@ -23,7 +24,6 @@ const insertIntoDB = async (payload: any) => {
         Number(startTime.split(":")[1]),
       ),
     );
-    console.log(startDateTime);
     const endDateTime = new Date(
       addMinutes(
         addHours(
@@ -33,7 +33,6 @@ const insertIntoDB = async (payload: any) => {
         Number(endTime.split(":")[1]),
       ),
     );
-    console.log({ startDateTime, endDateTime });
     while (startDateTime < endDateTime) {
       const slotStartDateTime = startDateTime; //10:00
       const slotEndDateTime = addMinutes(startDateTime, intervalTime); //10.30
@@ -42,7 +41,6 @@ const insertIntoDB = async (payload: any) => {
         startDateTime: slotStartDateTime,
         endDateTime: slotEndDateTime,
       };
-      console.log({ scheduleData });
       const existingSchedule = await prisma.schedule.findFirst({
         where: scheduleData,
       });
@@ -59,10 +57,61 @@ const insertIntoDB = async (payload: any) => {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  console.log({ schedules });
   return schedules;
+};
+
+const scheduleForDoctor = async (filter: any, option: IOptions) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(option);
+  const { startDateTime: startFilterDTime, endDateTime: endFilterDTime } =
+    filter;
+  const andConditions: Prisma.ScheduleWhereInput[] = [];
+
+  if (startFilterDTime && endFilterDTime) {
+    andConditions.push({
+      AND: [
+        {
+          startDateTime: {
+            gte: startFilterDTime,
+          },
+        },
+        {
+          endDateTime: {
+            lte: endFilterDTime,
+          },
+        },
+      ],
+    });
+  }
+
+  const whereConditions: Prisma.ScheduleWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+  const result = await prisma.schedule.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
+  const total = await prisma.schedule.count({
+    where: whereConditions,
+  });
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
+  };
 };
 
 export const scheduleService = {
   insertIntoDB,
+  scheduleForDoctor,
 };

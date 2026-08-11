@@ -1,11 +1,22 @@
 import express from "express";
 import { scheduleController } from "./schedule.controller";
+import { auth } from "../../middlewares/auth";
+
+enum UserRole {
+  DOCTOR = "DOCTOR",
+  ADMIN = "ADMIN",
+  PATIENT = "PATIENT",
+}
 
 const router = express.Router();
 
 router.post("/", scheduleController.insertIntoDB);
 
-router.get("/", scheduleController.scheduleForDoctor);
+router.get(
+  "/",
+  auth(UserRole.DOCTOR, UserRole.ADMIN, UserRole.PATIENT),
+  scheduleController.scheduleForDoctor,
+);
 
 router.delete("/:id", scheduleController.deleteScheduleFromDb);
 

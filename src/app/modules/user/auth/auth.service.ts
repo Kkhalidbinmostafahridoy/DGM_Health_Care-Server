@@ -9,7 +9,7 @@ const login = async (payload: { email: string; password: string }) => {
   const user = await prisma.user.findUnique({
     where: {
       email: payload.email,
-      status: UserStatus?.ACTIVE,
+      status: UserStatus.ACTIVE,
     },
   });
   const isCorrectPassword = await bcrypt.compare(
@@ -25,13 +25,13 @@ const login = async (payload: { email: string; password: string }) => {
   }
 
   const accessToken = jwtHelper.generateToken(
-    { email: user.email, role: user.UserRole },
+    { email: user.email, role: user.UserRole, userId: user.id },
     process.env.JWT_SECRET as string,
     "15m",
   );
 
   const refreshToken = jwtHelper.generateToken(
-    { email: user.email, role: user.UserRole },
+    { email: user.email, role: user.UserRole, userId: user.id },
     process.env.JWT_SECRET as string,
     "7d",
   );

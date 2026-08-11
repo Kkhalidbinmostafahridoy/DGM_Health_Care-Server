@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import catchAsync from "../../shared/catchAsync";
 import { prisma } from "../../shared/prisma";
+import { IJWTPayload } from "../../types/common";
 
 const insertIntoDB = async (
-  user: any,
+  user: IJWTPayload,
   payload: {
     scheduleIds: string[];
   },
@@ -14,6 +14,9 @@ const insertIntoDB = async (
       userId: user.userId,
     },
   });
+  console.log("USER:", user);
+  console.log("EMAIL:", user.email);
+  console.log("USER ID:", user.userId);
 
   const doctorScheduleData = payload.scheduleIds.map((scheduleId) => ({
     doctorId: doctorData.id,
@@ -23,12 +26,6 @@ const insertIntoDB = async (
     data: doctorScheduleData,
     skipDuplicates: true,
   });
-  console.log(doctorScheduleData, "doctorScheduleData");
-  return {
-    user,
-    payload,
-    doctorScheduleData,
-  };
 };
 
 export const doctorScheduleService = {

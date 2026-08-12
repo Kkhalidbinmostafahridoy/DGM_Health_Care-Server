@@ -28,6 +28,35 @@ const insertIntoDB = async (
   });
 };
 
+const UpdateDoctorSchedule = async (
+  user: IJWTPayload,
+  payload: { scheduleIds: string },
+) => {
+  const doctorData = await prisma.doctor.update({
+    where: {
+      id: user.userId,
+    },
+  });
+  return await prisma.doctorSchedule.update({
+    where: {
+      doctorId: user.userId,
+    },
+    data: {
+      scheduleId: payload.scheduleIds,
+    },
+  });
+};
+
+const deleteDoctorSchedule = async (user: IJWTPayload) => {
+  return await prisma.doctorSchedule.deleteMany({
+    where: {
+      doctorId: user.userId,
+    },
+  });
+};
+
 export const doctorScheduleService = {
   insertIntoDB,
+  UpdateDoctorSchedule,
+  deleteDoctorSchedule,
 };

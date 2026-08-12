@@ -8,8 +8,8 @@ const globalErrorHandler = (
   res: Response,
   next: NextFunction,
 ) => {
-  // if status code fixed use statusCode:number in error object else use 500
-  let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
+  // if status code fixed use statusCode:number and err.statusCode || in error object else use 500
+  let statusCode: number = err.statusCode || httpStatus.INTERNAL_SERVER_ERROR;
   let success = false;
   let message = err.message || "Something went wrong!";
   let error = err;
@@ -49,28 +49,34 @@ const globalErrorHandler = (
     if (err.code === "P1000") {
       message = "Database connection error";
       error = err.meta;
+      statusCode = httpStatus.INTERNAL_SERVER_ERROR;
     }
     if ((err.code = "P1001")) {
       message = "Database connection error";
       error = err.meta;
+      statusCode = httpStatus.INTERNAL_SERVER_ERROR;
     }
   }
 
   if (err instanceof Prisma.PrismaClientValidationError) {
     message = "Validation error";
     error = err.meta;
+    statusCode = httpStatus.BAD_REQUEST;
   }
   if (err instanceof Prisma.PrismaClientUnknownRequestError) {
     message = "Unknown request error";
     error = err.meta;
+    statusCode = httpStatus.BAD_REQUEST;
   }
   if (err instanceof Prisma.PrismaClientRustPanicError) {
     message = "Rust panic error";
     error = err.meta;
+    statusCode = httpStatus.INTERNAL_SERVER_ERROR;
   }
   if (err instanceof Prisma.PrismaClientInitializationError) {
     message = "Initialization error";
     error = err.meta;
+    statusCode = httpStatus.INTERNAL_SERVER_ERROR;
   }
 
   res.status(statusCode).json({

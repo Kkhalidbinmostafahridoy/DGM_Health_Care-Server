@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { fileUploader } from "../../Helper/FileUploader";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
 import { UserGender } from "@prisma/client";
+import httpStatus from "http-status";
+import ApiErrorHandler from "../../error/apiErrorHandler";
 
 // create patient (admin and doctor only)
 const createPatient = async (req: Request) => {
@@ -12,7 +14,10 @@ const createPatient = async (req: Request) => {
 
   // 2. Validate existence before calling Prisma
   if (!patientInfo || !patientInfo.email) {
-    throw new Error("Patient data or email is missing in request body");
+    throw new ApiErrorHandler(
+      httpStatus.BAD_REQUEST,
+      "Patient data or email is missing in request body",
+    );
   }
 
   // 3. Handle File Upload
@@ -30,7 +35,7 @@ const createPatient = async (req: Request) => {
   });
 
   if (existingEmail) {
-    throw new Error("Email already exists");
+    throw new ApiErrorHandler(httpStatus.CONFLICT, "Email already exists");
   }
 
   // 5. Hash Password
@@ -127,7 +132,7 @@ const createAdmin = async (req: Request) => {
     },
   });
   if (existingEmail) {
-    throw new Error("Email already exists");
+    throw new ApiErrorHandler(httpStatus.CONFLICT, "Email already exists");
   }
 
   // ✅ Hash password

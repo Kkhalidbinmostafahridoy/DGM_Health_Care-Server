@@ -1,3 +1,6 @@
+import ApiErrorHandler from "../app/error/apiErrorHandler";
+import httpStatus from "http-status";
+
 declare module "dotenv" {
   export function config(options?: { path?: string }): void;
   const _default: { config: typeof config };
@@ -36,10 +39,16 @@ declare module "@prisma/client" {
   export const Prisma: any;
 
   export function DOCTOR(ADMIN: any, DOCTOR: any) {
-    throw new Error("Function not implemented.");
+    throw new ApiErrorHandler(
+      httpStatus.NOT_IMPLEMENTED,
+      "Function not implemented.",
+    );
   }
 
   export function ADMIN(ADMIN: any, DOCTOR: (ADMIN: any, DOCTOR: any) => void) {
-    throw new Error("Function not implemented.");
+    throw new ApiErrorHandler(
+      httpStatus.NOT_IMPLEMENTED,
+      "Function not implemented.",
+    );
   }
 }

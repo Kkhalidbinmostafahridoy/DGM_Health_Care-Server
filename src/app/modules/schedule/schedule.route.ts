@@ -10,7 +10,7 @@ enum UserRole {
 
 const router = express.Router();
 
-router.post("/", scheduleController.insertIntoDB);
+router.post("/", auth(UserRole.ADMIN), scheduleController.insertIntoDB);
 
 router.get(
   "/",
@@ -18,6 +18,10 @@ router.get(
   scheduleController.scheduleForDoctor,
 );
 
-router.delete("/:id", scheduleController.deleteScheduleFromDb);
+router.delete(
+  "/:id",
+  auth(UserRole.ADMIN),
+  scheduleController.deleteScheduleFromDb,
+);
 
 export const ScheduleRoutes = router;

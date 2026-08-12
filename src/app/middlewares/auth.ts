@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { jwtHelper } from "../Helper/jwt.helper";
+import ApiErrorHandler from "../error/apiErrorHandler";
+import httpStatus from "http-status";
 
 export const auth = (...roles: string[]) => {
   return async (
@@ -10,12 +12,21 @@ export const auth = (...roles: string[]) => {
     try {
       const token = req.cookies.accessToken;
       if (!token) {
-        throw new Error("You are not authorize");
+        throw new ApiErrorHandler(
+          httpStatus.UNAUTHORIZED,
+          "You are not authorized",
+        );
       }
-      const verifyUser = jwtHelper.verifyToken(token, process.env.JWT_SECRET as string);
+      const verifyUser = jwtHelper.verifyToken(
+        token,
+        process.env.JWT_SECRET as string,
+      );
       req.user = verifyUser;
       if (roles.length && !roles.includes(verifyUser.role)) {
-        throw new Error("You are not authorize to access this route");
+        throw new ApiErrorHandler(
+          httpStatus.FORBIDDEN,
+          "You are not authorized to access this route",
+        );
       }
       next();
     } catch (error) {

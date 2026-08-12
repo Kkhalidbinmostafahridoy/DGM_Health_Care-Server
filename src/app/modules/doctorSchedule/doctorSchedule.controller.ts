@@ -20,6 +20,40 @@ const insertIntoDB = catchAsync(
     });
   },
 );
+
+const UpdateDoctorSchedule = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+    const result = await doctorScheduleService.UpdateDoctorSchedule(
+      user as IJWTPayload,
+      req.body,
+    );
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "doctor schedule updated",
+      data: result,
+    });
+  },
+);
+
+const deleteDoctorSchedule = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+    const result = await doctorScheduleService.deleteDoctorSchedule(
+      user as IJWTPayload,
+    );
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "doctor schedule deleted",
+      data: result,
+    });
+  },
+);
+
 export const doctorScheduleController = {
   insertIntoDB,
+  UpdateDoctorSchedule,
+  deleteDoctorSchedule,
 };

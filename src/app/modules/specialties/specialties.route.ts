@@ -7,19 +7,36 @@ import { SpecialtiesValidation } from "./specialties.validation";
 
 const router = express.Router();
 
-router.post("/", SpecialtiesController.insertIntoDB);
-(router.get(
+// GET ALL
+router.get("/", SpecialtiesController.getAllFromDB);
+
+// CREATE
+router.post(
   "/",
   fileUploader.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    req.body = SpecialtiesValidation.create.parse(JSON.parse(req.body.data));
-    return SpecialtiesController.getAllFromDB(req, res, next);
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.body?.data) {
+        return res.status(400).json({
+          success: false,
+          message: "data field is required in form-data",
+        });
+      }
+
+      const parsedData = JSON.parse(req.body.data);
+      const validatedData = SpecialtiesValidation.create.parse(parsedData);
+
+      // Reassign validated output back to body
+      req.body = validatedData;
+
+      return await SpecialtiesController.insertIntoDB(req, res, next);
+    } catch (error) {
+      return next(error);
+    }
   },
-),
-  router.delete(
-    "/:id",
-    auth(UserRole.ADMIN),
-    SpecialtiesController.deleteFromDB,
-  ));
+);
+
+// DELETE (Fixed escaped slash "/:id")
+router.delete("/:id", auth(UserRole.ADMIN), SpecialtiesController.deleteFromDB);
 
 export const SpecialtiesRoutes = router;

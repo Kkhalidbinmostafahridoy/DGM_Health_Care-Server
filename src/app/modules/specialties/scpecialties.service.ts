@@ -7,36 +7,6 @@ import { prisma } from "../../shared/prisma";
 import { paginationHelper } from "../../Helper/paginationHelper";
 import { IPaginationOptions } from "../../interface/IPagination";
 
-// const insertIntoDB = async (req: Request): Promise<Specialties> => {
-//   console.log("SERVICE BODY:", req.body);
-//   console.log("SERVICE FILE:", req.file);
-
-//   let icon: string | undefined;
-
-//   // Upload image to Cloudinary
-//   if (req.file) {
-//     const uploadResult = await fileUploader.uploadToCloudinary(req.file);
-
-//     console.log("CLOUDINARY RESULT:", uploadResult);
-
-//     icon = uploadResult?.secure_url;
-//   }
-
-//   // Create Prisma data
-//   const data = {
-//     title: req.body.title,
-//     ...(icon && { icon }),
-//   };
-
-//   console.log("PRISMA DATA:", data);
-
-//   const result = await prisma.specialties.create({
-//     data,
-//   });
-
-//   return result;
-// };
-
 const insertIntoDB = async (req: Request) => {
   const file = req.file;
 

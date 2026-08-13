@@ -1,57 +1,13 @@
-// import { Request } from "express";
-// import { specialtiesController } from "./specialties.controller";
-// import { fileUploader } from "../../Helper/FileUploader";
-// import { prisma } from "../../shared/prisma";
-// import { Specialties } from "@prisma/client";
-
-// interface IDeletePayload {
-//   id: string;
-// }
-
-// interface ISpecialtiesService {
-//   insertIntoDB: (req: Request) => Promise<Specialties>;
-//   getAllFromDB: (req?: unknown) => Promise<Specialties[]>;
-//   deleteFromDB: (payload: IDeletePayload) => Promise<Specialties>;
-// }
-
-// const insertIntoDB = async (req: Request): Promise<Specialties> => {
-//   const file = req.file;
-//   if (file) {
-//     const uploadToCloudinary = await fileUploader.uploadToCloudinary(file);
-//     req.body.icon = uploadToCloudinary?.secure_url;
-//   }
-
-//   const result = await prisma.specialties.create({
-//     data: req.body,
-//   });
-//   return result;
-// };
-
-// const getAllFromDB = async (req?: unknown): Promise<Specialties[]> => {
-//   return await prisma.specialties.findMany();
-// };
-
-// const deleteFromDB = async (payload: IDeletePayload): Promise<Specialties> => {
-//   const result = await prisma.specialties.delete({
-//     where: { id: payload.id },
-//   });
-//   return result;
-// };
-
-// export const specialtiesService: ISpecialtiesService = {
-//   insertIntoDB,
-//   getAllFromDB,
-//   deleteFromDB,
-// };
-
 import { Specialties } from "@prisma/client";
 import { Request } from "express";
+
 import { fileUploader } from "../../Helper/FileUploader";
 import { prisma } from "../../shared/prisma";
+
 import { paginationHelper } from "../../Helper/paginationHelper";
 import { IPaginationOptions } from "../../interface/IPagination";
 
-const inserIntoDB = async (req: Request) => {
+const insertIntoDB = async (req: Request) => {
   const file = req.file;
 
   if (file) {
@@ -59,23 +15,35 @@ const inserIntoDB = async (req: Request) => {
     req.body.icon = uploadToCloudinary?.secure_url;
   }
 
+  // ✅ Pass all required Prisma fields: title, name, icon, and optional description
+  const payload = {
+    title: req.body.title,
+    name: req.body.name,
+    description: req.body.description || null,
+    icon: req.body.icon,
+  };
+
   const result = await prisma.specialties.create({
-    data: req.body,
+    data: payload,
   });
 
   return result;
 };
-
 const getAllFromDB = async (options: IPaginationOptions) => {
   const { limit, page, skip } = paginationHelper.calculatePagination(options);
 
   const result = await prisma.specialties.findMany({
     skip,
     take: limit,
+
     orderBy:
       options.sortBy && options.sortOrder
-        ? { [options.sortBy]: options.sortOrder }
-        : { createdAt: "desc" },
+        ? {
+            [options.sortBy]: options.sortOrder,
+          }
+        : {
+            createdAt: "desc",
+          },
   });
 
   const total = await prisma.specialties.count();
@@ -86,6 +54,7 @@ const getAllFromDB = async (options: IPaginationOptions) => {
       page,
       limit,
     },
+
     data: result,
   };
 };
@@ -96,11 +65,12 @@ const deleteFromDB = async (id: string): Promise<Specialties> => {
       id,
     },
   });
+
   return result;
 };
 
 export const SpecialtiesService = {
-  inserIntoDB,
+  insertIntoDB,
   getAllFromDB,
   deleteFromDB,
 };

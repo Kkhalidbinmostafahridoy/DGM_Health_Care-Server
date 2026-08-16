@@ -64,12 +64,12 @@
 
 // doctor.service.ts
 
-import { Prisma } from "@prisma/client";
 import { prisma } from "../../shared/prisma"; // Use shared client instance
-import { paginationHelper } from "../../Helper/paginationHelper";
+import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
 import { doctorSearchableFields } from "./doctor.content";
+import { Doctor, type Prisma } from "@prisma/client";
 
-const getAllFromDB = async (filters: any, options: any) => {
+const getAllFromDB = async (filters: any, options: IOptions) => {
   const { page, limit, sortBy, sortOrder, skip } =
     paginationHelper.calculatePagination(options);
   const { searchTerm, specialties, ...filterData } = filters;
@@ -146,6 +146,23 @@ const getAllFromDB = async (filters: any, options: any) => {
   };
 };
 
+const updateIntoDB = async (id: string, payload: Partial<Doctor>) => {
+  const doctorInfo = await prisma.doctor.findUniqueOrThrow({
+    where: {
+      id,
+    },
+  });
+  const updatedData = await prisma.doctor.update({
+    where: {
+      id: doctorInfo.id,
+    },
+    data: payload,
+  });
+  return updatedData;
+  console.log(updateIntoDB);
+};
+
 export const doctorService = {
   getAllFromDB,
+  updateIntoDB,
 };

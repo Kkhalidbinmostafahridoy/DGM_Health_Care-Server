@@ -34,6 +34,8 @@ declare module "@prisma/client" {
     doctor: any;
     specialties: any;
     specialties: any;
+    doctorSpecialties: any;
+    DoctorSpecialty: any;
     constructor(arg?: any);
     $connect(): Promise<void>;
     $disconnect(): Promise<void>;

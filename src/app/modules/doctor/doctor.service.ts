@@ -68,6 +68,7 @@ import { prisma } from "../../shared/prisma"; // Use shared client instance
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
 import { doctorSearchableFields } from "./doctor.content";
 import { Doctor, type Prisma } from "@prisma/client";
+import { IDoctorUpdateInput } from "./doctor.Interface";
 
 const getAllFromDB = async (filters: any, options: IOptions) => {
   const { page, limit, sortBy, sortOrder, skip } =
@@ -146,20 +147,74 @@ const getAllFromDB = async (filters: any, options: IOptions) => {
   };
 };
 
-const updateIntoDB = async (id: string, payload: Partial<Doctor>) => {
+const updateIntoDB = async (
+  id: string,
+  payload: Partial<IDoctorUpdateInput>,
+) => {
   const doctorInfo = await prisma.doctor.findUniqueOrThrow({
     where: {
       id,
     },
   });
+
+  const { specialties, ...doctorData } = payload;
+
+  if (specialties && specialties.length > 0) {
+    const deleteSpecialtiesIds = specialties.filter(
+      (specialty) => specialty.isDeleted,
+    );
+
+    for (const specialty of deleteSpecialtiesIds) {
+      await prisma.DoctorSpecialty.deleteMany({
+        where: {
+          doctorId: id,
+          specialtiesId: specialty.specialtiesId,
+        },
+      });
+    }
+
+    const createSpecialtiesIds = specialties.filter(
+      (specialty) => !specialty.isDeleted,
+    );
+
+    for (const specialty of createSpecialtiesIds) {
+      const existingSpecialty = await prisma.DoctorSpecialty.findUnique({
+        where: {
+          specialtiesId_doctorId: {
+            specialtiesId: specialty.specialtiesId,
+            doctorId: id,
+          },
+        },
+      });
+
+      if (!existingSpecialty) {
+        await prisma.DoctorSpecialty.create({
+          data: {
+            doctorId: id,
+            specialtiesId: specialty.specialtiesId,
+          },
+        });
+      }
+    }
+  }
+
   const updatedData = await prisma.doctor.update({
     where: {
       id: doctorInfo.id,
     },
-    data: payload,
+    data: doctorData,
+    include: {
+      doctorSpecialties: {
+        include: {
+          specialties: true,
+        },
+      },
+    },
   });
+
+  console.log(updatedData);
+
   return updatedData;
-  console.log(updateIntoDB);
 };
 
 export const doctorService = {

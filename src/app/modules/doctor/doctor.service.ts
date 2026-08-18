@@ -90,7 +90,7 @@ const getAllFromDB = async (filters: any, options: IOptions) => {
   }
 
   // 2. Relational filtering for Specialties (if passed)
-  if (specialties) {
+  if (specialties && specialties.length > 0) {
     andConditions.push({
       doctorSpecialties: {
         some: {
@@ -158,63 +158,64 @@ const updateIntoDB = async (
   });
 
   const { specialties, ...doctorData } = payload;
+  // tnx er kaj multiple operation krtesi ei jnno
+  return await prisma.$transaction(async (tnx) => {
+    if (specialties && specialties.length > 0) {
+      const deleteSpecialtiesIds = specialties.filter(
+        (specialty) => specialty.isDeleted,
+      );
 
-  if (specialties && specialties.length > 0) {
-    const deleteSpecialtiesIds = specialties.filter(
-      (specialty) => specialty.isDeleted,
-    );
-
-    for (const specialty of deleteSpecialtiesIds) {
-      await prisma.DoctorSpecialty.deleteMany({
-        where: {
-          doctorId: id,
-          specialtiesId: specialty.specialtiesId,
-        },
-      });
-    }
-
-    const createSpecialtiesIds = specialties.filter(
-      (specialty) => !specialty.isDeleted,
-    );
-
-    for (const specialty of createSpecialtiesIds) {
-      const existingSpecialty = await prisma.DoctorSpecialty.findUnique({
-        where: {
-          specialtiesId_doctorId: {
-            specialtiesId: specialty.specialtiesId,
-            doctorId: id,
-          },
-        },
-      });
-
-      if (!existingSpecialty) {
-        await prisma.DoctorSpecialty.create({
-          data: {
+      for (const specialty of deleteSpecialtiesIds) {
+        await tnx.DoctorSpecialty.deleteMany({
+          where: {
             doctorId: id,
             specialtiesId: specialty.specialtiesId,
           },
         });
       }
-    }
-  }
 
-  const updatedData = await prisma.doctor.update({
-    where: {
-      id: doctorInfo.id,
-    },
-    data: doctorData,
-    include: {
-      doctorSpecialties: {
-        include: {
-          specialties: true,
+      const createSpecialtiesIds = specialties.filter(
+        (specialty) => !specialty.isDeleted,
+      );
+
+      for (const specialty of createSpecialtiesIds) {
+        const existingSpecialty = await tnx.DoctorSpecialty.findUnique({
+          where: {
+            specialtiesId_doctorId: {
+              specialtiesId: specialty.specialtiesId,
+              doctorId: id,
+            },
+          },
+        });
+
+        if (!existingSpecialty) {
+          await tnx.DoctorSpecialty.create({
+            data: {
+              doctorId: id,
+              specialtiesId: specialty.specialtiesId,
+            },
+          });
+        }
+      }
+    }
+
+    const updatedData = await tnx.doctor.update({
+      where: {
+        id: doctorInfo.id,
+      },
+      data: doctorData,
+      include: {
+        doctorSpecialties: {
+          include: {
+            specialties: true,
+          },
         },
       },
-    },
+    });
+    return updatedData;
   });
 
-  console.log(updatedData);
-
-  return updatedData;
+  // console.log(updatedData);
 };
 
 export const doctorService = {

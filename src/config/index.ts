@@ -1,6 +1,5 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
-import type { ProcessEnv } from "process";
 
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
@@ -17,4 +16,5 @@ export default {
     secret: process.env.JWT_SECRET,
     expires_in: process.env.JWT_EXPIRES_IN,
   },
+  openRouter_Api_Key: process.env.OPEN_ROUTER_API_KEY,
 };

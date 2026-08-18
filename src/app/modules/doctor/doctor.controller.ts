@@ -5,6 +5,7 @@ import sendResponse from "../../shared/sendResponse";
 import httpStatus from "http-status";
 import { doctorService } from "./doctor.service";
 import { doctorFilterableFields } from "./doctor.content";
+import { prisma } from "../../shared/prisma";
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
   const options = pick(req.query, ["page", "sortBy", "limit", "sortOrder"]);
@@ -33,7 +34,20 @@ const updateIntoDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAiSuggestion = catchAsync(async (req: Request, res: Response) => {
+  const result = await doctorService.getAiSuggestion(req.body);
+  console.log(getAiSuggestion);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Ai message get successfully",
+    data: result,
+  });
+});
+
 export const doctorController = {
   getAllFromDB,
   updateIntoDB,
+  getAiSuggestion,
 };

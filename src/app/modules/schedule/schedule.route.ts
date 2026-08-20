@@ -10,7 +10,11 @@ enum UserRole {
 
 const router = express.Router();
 
-router.post("/", auth(UserRole.ADMIN), scheduleController.insertIntoDB);
+router.post(
+  "/",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  scheduleController.insertIntoDB,
+);
 
 router.get(
   "/",

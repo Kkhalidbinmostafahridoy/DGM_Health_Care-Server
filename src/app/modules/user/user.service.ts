@@ -42,7 +42,7 @@ const createPatient = async (req: Request) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // 6. Transaction
-  const result = await prisma.$transaction(async (tnx) => {
+  const result = await prisma.$transaction(async (tnx: any) => {
     const user = await tnx.user.create({
       data: {
         email: patientInfo.email,
@@ -68,41 +68,60 @@ const createPatient = async (req: Request) => {
 
 //
 //
-// doctor create doctor (admin only)
 const createDoctor = async (req: Request) => {
-  if (req?.file) {
-    const uploadedResult = await fileUploader.uploadToCloudinary(req.file);
+  const doctorData = req.body.doctor || req.body;
+  const doctorEmail = doctorData.email || req.body.email;
+  const password = req.body.password || doctorData.password;
 
-    req.body.profilePhoto = uploadedResult?.secure_url as string;
+  if (!doctorEmail || !password) {
+    throw new ApiErrorHandler(
+      httpStatus.BAD_REQUEST,
+      "Doctor email and password are required",
+    );
   }
 
-  console.log("BODY:", req.body);
+  if (req?.file) {
+    const uploadedResult = await fileUploader.uploadToCloudinary(req.file);
+    doctorData.profilePhoto = uploadedResult?.secure_url as string;
+  }
 
-  // ✅ FIX HERE
-  const hashPassword = await bcrypt.hash(req.body.password, 10);
+  const existingEmail = await prisma.user.findUnique({
+    where: {
+      email: doctorEmail,
+    },
+  });
+
+  if (existingEmail) {
+    throw new ApiErrorHandler(httpStatus.CONFLICT, "Email already exists");
+  }
+
+  const hashPassword = await bcrypt.hash(password, 10);
 
   const result = await prisma.$transaction(async (tnx: any) => {
     const user = await tnx.user.create({
       data: {
-        email: req.body.email,
+        email: doctorEmail,
         password: hashPassword,
         UserRole: "DOCTOR",
       },
     });
+
     const genderValue =
-      req.body.gender === "Male" ? UserGender.Male : UserGender.Female;
-    console.log("gender", genderValue);
+      doctorData.gender === "Male" ? UserGender.Male : UserGender.Female;
 
     const doctor = await tnx.doctor.create({
       data: {
-        email: req.body.email,
-        name: req.body.name,
-        address: req.body.address,
-        registrationNumber: req.body.registrationNumber,
-        appointmentFee: Number(req.body.appointmentFee),
-        qualifications: req.body.qualifications,
-        currentlyWorkingAt: req.body.currentlyWorkingAt,
-        designation: req.body.designation,
+        email: doctorEmail,
+        name: doctorData.name,
+        contactNumber: doctorData.contactNumber || null,
+        address: doctorData.address,
+        registrationNumber: doctorData.registrationNumber,
+        experience: doctorData.experience ? Number(doctorData.experience) : 0,
+        appointmentFee: Number(doctorData.appointmentFee),
+        qualifications: doctorData.qualifications,
+        currentlyWorkingAt: doctorData.currentlyWorkingAt,
+        designation: doctorData.designation,
+        profilePhoto: doctorData.profilePhoto || null,
         userId: user.id,
         gender: genderValue,
       },
@@ -114,34 +133,40 @@ const createDoctor = async (req: Request) => {
   return result;
 };
 //
-// admin create doctor (admin only)
+// admin create admin (admin only)
 const createAdmin = async (req: Request) => {
-  // ✅ Upload image (if exists)
   if (req.file) {
     const uploaded = await fileUploader.uploadToCloudinary(req.file);
-
-    // ensure admin object exists
     if (!req.body.admin) req.body.admin = {};
-
     req.body.admin.profilePhoto = uploaded?.secure_url;
+  }
+
+  const adminData = req.body.admin || req.body;
+  const adminEmail = adminData.email || req.body.email;
+  const password = req.body.password || adminData.password;
+
+  if (!adminEmail || !password) {
+    throw new ApiErrorHandler(
+      httpStatus.BAD_REQUEST,
+      "Admin email and password are required",
+    );
   }
 
   const existingEmail = await prisma.user.findUnique({
     where: {
-      email: req.body.admin.email,
+      email: adminEmail,
     },
   });
   if (existingEmail) {
     throw new ApiErrorHandler(httpStatus.CONFLICT, "Email already exists");
   }
 
-  // ✅ Hash password
-  const hashedPassword = await bcrypt.hash(req.body.password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const result = await prisma.$transaction(async (tnx: any) => {
     const user = await tnx.user.create({
       data: {
-        email: req.body.admin.email,
+        email: adminEmail,
         password: hashedPassword,
         UserRole: "ADMIN",
       },
@@ -149,7 +174,10 @@ const createAdmin = async (req: Request) => {
 
     const admin = await tnx.admin.create({
       data: {
-        ...req.body.admin,
+        name: adminData.name,
+        email: adminEmail,
+        profilePhoto: adminData.profilePhoto || null,
+        contactNumber: adminData.contactNumber || null,
         password: hashedPassword,
         userId: user.id,
       },

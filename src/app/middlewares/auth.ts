@@ -10,7 +10,11 @@ export const auth = (...roles: string[]) => {
     next: NextFunction,
   ) => {
     try {
-      const token = req.cookies.accessToken;
+      let token = req.cookies?.accessToken || req.headers.authorization;
+      if (token && token.startsWith("Bearer ")) {
+        token = token.split(" ")[1];
+      }
+
       if (!token) {
         throw new ApiErrorHandler(
           httpStatus.UNAUTHORIZED,

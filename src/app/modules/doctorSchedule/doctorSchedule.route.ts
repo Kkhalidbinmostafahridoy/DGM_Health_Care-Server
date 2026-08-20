@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post(
   "/",
-  auth(UserRole.DOCTOR),
+  auth(UserRole.DOCTOR, UserRole.ADMIN),
   validateRequest(
     doctorScheduleValidation.createDoctorSCheduleValidationSchema,
   ) as unknown as express.RequestHandler,
@@ -17,12 +17,12 @@ router.post(
 );
 router.patch(
   "/update",
-  auth(UserRole.DOCTOR),
+  auth(UserRole.DOCTOR, UserRole.ADMIN),
   doctorScheduleController.UpdateDoctorSchedule,
 );
 router.delete(
   "/delete",
-  auth(UserRole.DOCTOR),
+  auth(UserRole.DOCTOR, UserRole.ADMIN),
   doctorScheduleController.deleteDoctorSchedule,
 );
 

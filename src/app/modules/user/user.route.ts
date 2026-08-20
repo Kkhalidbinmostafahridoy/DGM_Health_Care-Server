@@ -37,35 +37,32 @@ router.post(
 );
 
 // get all patients (admin and doctor only)
-(router.get("/get-all", userController.getAllFromDB),
-  router.get("/get-patient", userController.getPatient),
-  //
-  //
-  // admin create doctor
-  router.post(
-    "/admins",
-    auth(UserRole?.ADMIN as any),
-    fileUploader.upload.single("file"),
-    (req: Request, res: Response, next: NextFunction) => {
-      try {
-        console.log("BODY:", req.body);
+router.get("/get-all", auth(UserRole.ADMIN, UserRole.DOCTOR), userController.getAllFromDB);
+router.get("/get-patient", auth(UserRole.ADMIN, UserRole.DOCTOR), userController.getPatient);
 
-        const data = req.body.data || req.body;
+// admin create admin
+router.post(
+  "/admins",
+  auth(UserRole.ADMIN),
+  fileUploader.upload.single("file"),
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log("BODY:", req.body);
 
-        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+      const data = req.body.data || req.body;
+      const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
-        const validated =
-          UserValidation.createAdminZodValidationSchema.parse(parsedData);
+      const validated =
+        UserValidation.createAdminZodValidationSchema.parse(parsedData);
 
-        req.body = validated;
-
-        next();
-      } catch (error) {
-        next(error);
-      }
-    },
-    userController.createAdmin,
-  ));
+      req.body = validated;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  },
+  userController.createAdmin,
+);
 
 //
 //

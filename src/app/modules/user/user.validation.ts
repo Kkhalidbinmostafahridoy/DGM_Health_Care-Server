@@ -9,8 +9,8 @@ const createPatientZodValidationSchema = z.object({
     email: z.string({
       error: "Email is required",
     }),
-    age: z.number({
-      error: "Age is required",
+    age: z.coerce.number({
+      message: "Age is required and must be a number",
     }),
     address: z.string({
       error: "Address is required",

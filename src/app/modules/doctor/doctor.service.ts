@@ -163,7 +163,7 @@ const updateIntoDB = async (
 
   const { specialties, ...doctorData } = payload;
   // tnx er kaj multiple operation krtesi ei jnno
-  return await prisma.$transaction(async (tnx) => {
+  return await prisma.$transaction(async (tnx: any) => {
     if (specialties && specialties.length > 0) {
       const deleteSpecialtiesIds = specialties.filter(
         (specialty) => specialty.isDeleted,
@@ -225,8 +225,6 @@ const updateIntoDB = async (
 const getAiSuggestion = async (payload: { symptoms: string }) => {
   console.log("========== AI DOCTOR SUGGESTION ==========");
 
-  console.log("Symptoms:", payload.symptoms);
-
   // =====================================================
   // 1. VALIDATION
   // =====================================================
@@ -236,6 +234,8 @@ const getAiSuggestion = async (payload: { symptoms: string }) => {
   }
 
   const symptoms = payload.symptoms.trim();
+
+  console.log("Symptoms:", symptoms);
 
   // =====================================================
   // 2. GET ACTIVE DOCTORS
@@ -265,6 +265,7 @@ const getAiSuggestion = async (payload: { symptoms: string }) => {
     ...new Map(
       doctors
         .flatMap((doctor: any) => doctor.doctorSpecialties)
+        .filter((doctorSpecialty: any) => doctorSpecialty.specialties)
         .map((doctorSpecialty: any) => [
           doctorSpecialty.specialties.id,
 
@@ -279,44 +280,43 @@ const getAiSuggestion = async (payload: { symptoms: string }) => {
     ).values(),
   ];
 
-  console.log("Available specialties:", specialties);
+  console.log("Available specialties:");
+  console.dir(specialties, { depth: null });
 
   // =====================================================
-  // 4. AI PROMPT
+  // 4. CHECK SPECIALTY AVAILABILITY
+  // =====================================================
+
+  if (specialties.length === 0) {
+    return {
+      symptoms,
+
+      aiSuggestion: {
+        specialtyId: null,
+
+        specialtyName: "General Medicine",
+
+        confidence: 0,
+
+        reason:
+          "No active doctor specialty is currently available in DGM Care.",
+
+        emergency: false,
+      },
+
+      doctors: [],
+
+      message: "No doctor specialties are currently available.",
+    };
+  }
+
+  console.log("doctor data loaded");
+
+  // =====================================================
+  // 5. AI PROMPT
   // =====================================================
 
   const prompt = `
-You are the medical specialty routing AI for DGM Care.
-
-Your task is ONLY to identify the most appropriate medical
-specialty for the patient's symptoms.
-
-You are NOT allowed to diagnose the patient.
-You are NOT allowed to prescribe medication.
-
-IMPORTANT RULES:
-
-1. Analyze the symptoms independently.
-2. Do NOT choose a specialty simply because it is available.
-3. The available specialties list is ONLY used to check whether
-   DGM Care currently has doctors for the recommended specialty.
-4. If none of the available specialties is appropriate,
-   return "NO_MATCH".
-5. Do NOT force cardiology, dermatology, neurology, etc.
-   when the symptoms do not support that specialty.
-6. General symptoms such as fever, fatigue, nausea, headache,
-   vomiting, body pain, weakness, or flu-like symptoms should
-   generally be evaluated by General Medicine/Internal Medicine
-   when appropriate.
-7. Chest pain, severe breathing difficulty, severe bleeding,
-   loss of consciousness, stroke-like symptoms, or other
-   potentially serious symptoms should be marked as emergency.
-8. Return ONLY valid JSON.
-9. Do not return markdown.
-10. Do not return \`\`\`json.
-11. Do not invent doctor names.
-12. Do not invent specialty IDs.
-
 PATIENT SYMPTOMS:
 
 "${symptoms}"
@@ -325,40 +325,107 @@ AVAILABLE SPECIALTIES IN DGM CARE:
 
 ${JSON.stringify(specialties, null, 2)}
 
-Return exactly this structure:
+TASK:
+
+Determine the most appropriate medical specialty for the patient's
+symptoms.
+
+IMPORTANT RULES:
+
+1. Analyze the symptoms independently.
+
+2. Do NOT choose a specialty just because it exists in the database.
+
+3. First determine the medically appropriate specialty.
+
+4. Then check whether that specialty exists in AVAILABLE SPECIALTIES.
+
+5. If the appropriate specialty exists:
+   return:
+   status = "MATCH"
+   specialtyId = exact database ID.
+
+6. If the appropriate specialty does NOT exist:
+   return:
+   status = "NO_MATCH"
+   specialtyId = null.
+
+7. NEVER substitute an unrelated specialty.
+
+8. General symptoms such as:
+   - fever
+   - fatigue
+   - nausea
+   - headache
+   - vomiting
+   - body pain
+   - weakness
+   - flu-like symptoms
+
+   are generally appropriate for General Medicine/Internal Medicine
+   when there are no specialty-specific symptoms.
+
+9. Do NOT select Cardiology unless symptoms actually suggest a
+   cardiovascular problem.
+
+10. Do NOT select Neurology unless symptoms actually suggest a
+    neurological problem.
+
+11. Do NOT select Dermatology unless symptoms involve skin,
+    hair, or nails.
+
+12. Chest pain, severe breathing difficulty, severe bleeding,
+    loss of consciousness, stroke-like symptoms, or other
+    potentially life-threatening symptoms should set:
+
+    emergency = true
+
+13. Do NOT diagnose the disease.
+
+14. Do NOT prescribe medicine.
+
+15. Do NOT invent doctor names.
+
+16. Do NOT invent specialty IDs.
+
+17. confidence must be between 0 and 1.
+
+18. Return ONLY valid JSON.
+
+19. Do NOT return markdown.
+
+20. Do NOT return \`\`\`json.
+
+RETURN EXACTLY:
 
 {
-  "status": "MATCH" | "NO_MATCH",
+  "status": "MATCH",
   "specialtyId": "database specialty ID or null",
-  "specialtyName": "appropriate specialty name",
+  "specialtyName": "specialty name",
   "confidence": 0,
   "reason": "short explanation",
   "emergency": false
 }
 
-IMPORTANT:
-
-If the appropriate specialty is General Medicine but
-General Medicine is NOT available in the database,
-return:
+If there is no matching specialty in the database, return:
 
 {
   "status": "NO_MATCH",
   "specialtyId": null,
-  "specialtyName": "General Medicine",
+  "specialtyName": "appropriate specialty",
   "confidence": 0.95,
-  "reason": "The symptoms are more appropriate for General Medicine, but no matching specialty is currently available.",
+  "reason": "The symptoms are more appropriate for this specialty, but this specialty is not currently available in DGM Care.",
   "emergency": false
 }
 `;
 
   // =====================================================
-  // 5. CALL OPENROUTER
+  // 6. CALL OPENROUTER
   // =====================================================
 
   const aiResponse = await getOpenRouterCompletion(prompt);
 
-  console.log("AI RESPONSE:");
+  console.log("========== AI RESPONSE ==========");
   console.dir(aiResponse, { depth: null });
 
   if (!aiResponse || !aiResponse.content) {
@@ -369,7 +436,7 @@ return:
   }
 
   // =====================================================
-  // 6. GET AI CONTENT
+  // 7. GET AI CONTENT
   // =====================================================
 
   let aiContent =
@@ -379,56 +446,127 @@ return:
 
   aiContent = aiContent.trim();
 
-  // Remove markdown if model accidentally returns it
+  console.log("RAW AI CONTENT:");
+  console.log(aiContent);
+
+  // =====================================================
+  // 8. REMOVE MARKDOWN
+  // =====================================================
+
   aiContent = aiContent
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
 
-  console.log("AI CONTENT:", aiContent);
-
   // =====================================================
-  // 7. PARSE AI RESPONSE
+  // 9. PARSE JSON
   // =====================================================
 
   let aiResult: {
     status: "MATCH" | "NO_MATCH";
+
     specialtyId: string | null;
+
     specialtyName: string;
+
     confidence: number;
+
     reason: string;
+
     emergency: boolean;
   };
 
   try {
     aiResult = JSON.parse(aiContent);
   } catch (error) {
-    console.error("AI JSON PARSE ERROR:", error);
+    console.error("========== AI JSON PARSE ERROR ==========");
+    console.error(error);
 
-    console.error("RAW AI CONTENT:", aiContent);
+    console.error("AI CONTENT:");
+    console.error(aiContent);
 
     throw new ApiErrorHandler(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "AI returned invalid response!",
+      "AI returned invalid JSON response!",
     );
   }
 
-  console.log("PARSED AI RESULT:", aiResult);
+  console.log("========== PARSED AI RESULT ==========");
+  console.dir(aiResult, { depth: null });
 
   // =====================================================
-  // 8. VALIDATE AI RESPONSE
+  // 10. VALIDATE AI RESPONSE
   // =====================================================
 
-  if (!aiResult.status || !aiResult.specialtyName) {
+  if (!aiResult.status || !["MATCH", "NO_MATCH"].includes(aiResult.status)) {
     throw new ApiErrorHandler(
       httpStatus.INTERNAL_SERVER_ERROR,
-      "AI returned incomplete response!",
+      "AI returned invalid status!",
+    );
+  }
+
+  if (!aiResult.specialtyName) {
+    throw new ApiErrorHandler(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "AI returned incomplete specialty information!",
+    );
+  }
+
+  if (
+    typeof aiResult.confidence !== "number" ||
+    aiResult.confidence < 0 ||
+    aiResult.confidence > 1
+  ) {
+    throw new ApiErrorHandler(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "AI returned invalid confidence score!",
+    );
+  }
+
+  if (typeof aiResult.reason !== "string") {
+    throw new ApiErrorHandler(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "AI returned invalid reason!",
+    );
+  }
+
+  if (typeof aiResult.emergency !== "boolean") {
+    throw new ApiErrorHandler(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "AI returned invalid emergency status!",
     );
   }
 
   // =====================================================
-  // 9. NO MATCH
+  // 11. EMERGENCY RESPONSE
+  // =====================================================
+
+  if (aiResult.emergency === true) {
+    return {
+      symptoms,
+
+      aiSuggestion: {
+        specialtyId: null,
+
+        specialtyName: aiResult.specialtyName,
+
+        confidence: aiResult.confidence,
+
+        reason: aiResult.reason,
+
+        emergency: true,
+      },
+
+      doctors: [],
+
+      message:
+        "The reported symptoms may require urgent medical attention. Please seek emergency medical care immediately.",
+    };
+  }
+
+  // =====================================================
+  // 12. NO MATCH
   // =====================================================
 
   if (aiResult.status === "NO_MATCH") {
@@ -454,22 +592,30 @@ return:
   }
 
   // =====================================================
-  // 10. VERIFY SPECIALTY ID
+  // 13. MATCH MUST HAVE SPECIALTY ID
+  // =====================================================
+
+  if (!aiResult.specialtyId) {
+    throw new ApiErrorHandler(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "AI returned MATCH without specialty ID!",
+    );
+  }
+
+  // =====================================================
+  // 14. VERIFY SPECIALTY ID
   // =====================================================
 
   const matchedSpecialty = specialties.find(
     (specialty: any) => specialty.id === aiResult.specialtyId,
   );
 
+  // =====================================================
+  // 15. INVALID / UNAVAILABLE SPECIALTY
+  // =====================================================
+
   if (!matchedSpecialty) {
-    /*
-      IMPORTANT:
-
-      Do NOT fall back to another specialty.
-
-      If AI says General Medicine and your database
-      doesn't have General Medicine, return NO_MATCH.
-    */
+    console.warn("AI returned unavailable specialty:", aiResult.specialtyId);
 
     return {
       symptoms,
@@ -493,7 +639,7 @@ return:
   }
 
   // =====================================================
-  // 11. FIND MATCHING DOCTORS
+  // 16. FIND MATCHING DOCTORS
   // =====================================================
 
   const recommendedDoctors = doctors
@@ -530,17 +676,19 @@ return:
 
       designation: doctor.designation,
 
-      specialties: doctor.doctorSpecialties.map((doctorSpecialty: any) => ({
-        id: doctorSpecialty.specialties.id,
+      specialties: doctor.doctorSpecialties
+        .filter((doctorSpecialty: any) => doctorSpecialty.specialties)
+        .map((doctorSpecialty: any) => ({
+          id: doctorSpecialty.specialties.id,
 
-        title: doctorSpecialty.specialties.title,
+          title: doctorSpecialty.specialties.title,
 
-        name: doctorSpecialty.specialties.name,
-      })),
+          name: doctorSpecialty.specialties.name,
+        })),
     }));
 
   // =====================================================
-  // 12. RETURN RESULT
+  // 17. RETURN RESULT
   // =====================================================
 
   return {
@@ -549,7 +697,7 @@ return:
     aiSuggestion: {
       specialtyId: matchedSpecialty.id,
 
-      specialtyName: matchedSpecialty.name,
+      specialtyName: matchedSpecialty.name || matchedSpecialty.title,
 
       confidence: aiResult.confidence,
 
@@ -563,9 +711,10 @@ return:
     message:
       recommendedDoctors.length > 0
         ? "Doctors recommended successfully."
-        : `No ${matchedSpecialty.name} doctor is currently available.`,
+        : `No ${matchedSpecialty.name || matchedSpecialty.title} doctor is currently available.`,
   };
 };
+
 export const doctorService = {
   getAllFromDB,
   updateIntoDB,

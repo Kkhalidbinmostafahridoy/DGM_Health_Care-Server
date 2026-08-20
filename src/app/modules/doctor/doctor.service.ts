@@ -261,27 +261,35 @@ const getAiSuggestion = async (payload: { symptoms: string }) => {
   // 3. GET AVAILABLE SPECIALTIES
   // =====================================================
 
-  const specialties = [
-    ...new Map(
-      doctors
-        .flatMap((doctor: any) => doctor.doctorSpecialties)
-        .filter((doctorSpecialty: any) => doctorSpecialty.specialties)
-        .map((doctorSpecialty: any) => [
-          doctorSpecialty.specialties.id,
+  const dbSpecialties = await prisma.specialties.findMany();
 
-          {
-            id: doctorSpecialty.specialties.id,
+  const specialtiesMap = new Map<string, { id: string; title: string; name: string }>();
 
-            title: doctorSpecialty.specialties.title,
+  // Add DB specialties
+  for (const s of dbSpecialties) {
+    specialtiesMap.set(s.id, {
+      id: s.id,
+      title: s.title,
+      name: s.name || s.title,
+    });
+  }
 
-            name: doctorSpecialty.specialties.name,
-          },
-        ]),
-    ).values(),
-  ];
+  // Add linked doctor specialties
+  for (const doctor of doctors) {
+    for (const ds of doctor.doctorSpecialties) {
+      if (ds.specialties) {
+        specialtiesMap.set(ds.specialties.id, {
+          id: ds.specialties.id,
+          title: ds.specialties.title,
+          name: ds.specialties.name || ds.specialties.title,
+        });
+      }
+    }
+  }
 
-  console.log("Available specialties:");
-  console.dir(specialties, { depth: null });
+  const specialties = Array.from(specialtiesMap.values());
+
+  console.log("Available specialties:", specialties.length);
 
   // =====================================================
   // 4. CHECK SPECIALTY AVAILABILITY
@@ -643,12 +651,23 @@ If there is no matching specialty in the database, return:
   // =====================================================
 
   const recommendedDoctors = doctors
-    .filter((doctor: any) =>
-      doctor.doctorSpecialties.some(
+    .filter((doctor: any) => {
+      const hasDirectSpecialty = doctor.doctorSpecialties.some(
         (doctorSpecialty: any) =>
           doctorSpecialty.specialtiesId === matchedSpecialty.id,
-      ),
-    )
+      );
+      const designationMatch =
+        doctor.designation &&
+        ((matchedSpecialty.name &&
+          doctor.designation.toLowerCase().includes(matchedSpecialty.name.toLowerCase())) ||
+          (matchedSpecialty.title &&
+            doctor.designation.toLowerCase().includes(matchedSpecialty.title.toLowerCase())) ||
+          (matchedSpecialty.title === "General Medicine" &&
+            (doctor.designation.toLowerCase().includes("medicine") ||
+              doctor.designation.toLowerCase().includes("senior"))));
+
+      return hasDirectSpecialty || designationMatch;
+    })
     .map((doctor: any) => ({
       id: doctor.id,
 

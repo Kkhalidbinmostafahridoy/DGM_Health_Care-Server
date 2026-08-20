@@ -6,24 +6,33 @@ import ApiErrorHandler from "../error/apiErrorHandler";
 const openai = new OpenAI({
   apiKey: config.openRouter_Api_Key,
   baseURL: "https://openrouter.ai/api/v1",
-
   defaultHeaders: {
     "HTTP-Referer": "http://localhost:3000",
     "X-Title": "DGM Care",
   },
 });
 
+const CANDIDATE_MODELS = [
+  "meta-llama/llama-3.1-8b-instruct",
+  "deepseek/deepseek-r1:free",
+  "google/gemini-2.0-flash-exp:free",
+  "qwen/qwen-2.5-coder-32b-instruct:free",
+  "mistralai/mistral-small-24b-instruct-2501:free"
+];
+
 export const getOpenRouterCompletion = async (prompt: string) => {
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+  let lastError: any = null;
 
-      temperature: 0,
-
-      messages: [
-        {
-          role: "system",
-          content: `
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      console.log(`Trying OpenRouter model: ${modelName}`);
+      const completion = await openai.chat.completions.create({
+        model: modelName,
+        temperature: 0,
+        messages: [
+          {
+            role: "system",
+            content: `
 You are a medical specialty routing AI for DGM Care.
 
 Your ONLY responsibility is to identify the most appropriate
@@ -47,45 +56,31 @@ return NO_MATCH.
 
 NEVER substitute an unrelated specialty just because it is available.
 
-For example:
-If the symptoms are general flu-like symptoms and General Medicine
-is not available, DO NOT select Cardiology simply because Cardiology
-is available.
-
 Return ONLY valid JSON.
 Do not return markdown.
 Do not return \`\`\`json.
 `,
-        },
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
 
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-
-    const message = completion.choices?.[0]?.message;
-
-    if (!message) {
-      throw new ApiErrorHandler(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        "AI returned an empty response!",
-      );
+      const message = completion.choices?.[0]?.message;
+      if (message && message.content) {
+        return message;
+      }
+    } catch (err: any) {
+      console.warn(`Model ${modelName} failed, trying next candidate...`, err?.message || err);
+      lastError = err;
     }
-
-    return message;
-  } catch (error: any) {
-    console.error("========== OPENROUTER ERROR ==========");
-    console.error(error);
-
-    if (error instanceof ApiErrorHandler) {
-      throw error;
-    }
-
-    throw new ApiErrorHandler(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      "AI service is currently unavailable!",
-    );
   }
+
+  console.error("========== ALL OPENROUTER MODELS FAILED ==========", lastError);
+  throw new ApiErrorHandler(
+    httpStatus.INTERNAL_SERVER_ERROR,
+    "AI service is currently unavailable!",
+  );
 };

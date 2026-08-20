@@ -25,5 +25,8 @@
         "statusBar.debuggingBackground": "#61dafb",
         "statusBar.debuggingForeground": "#15202b"
     },
-    "peacock.color": "#61dafb"
+    "peacock.color": "#61dafb",
+    "cSpell.words": [
+        "INPROGRESS"
+    ]
 }

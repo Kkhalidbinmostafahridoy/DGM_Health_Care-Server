@@ -3,11 +3,12 @@ import app from "./app";
 import config from "./config";
 import "dotenv/config";
 
-import { seedAdmin } from "./app/DB/seed";
+import { seedAdmin, seedSpecialtiesAndLinkDoctors } from "./app/DB/seed";
 
 async function bootstrap() {
-  // Seed default admin if missing
+  // Seed default admin and specialties if missing
   await seedAdmin();
+  await seedSpecialtiesAndLinkDoctors();
 
   // This variable will hold our server instance
   let server: Server;

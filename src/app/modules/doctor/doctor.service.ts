@@ -741,11 +741,40 @@ If there is no matching specialty in the database, return:
   };
 };
 
+// const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
+//   const result = await prisma.doctor.findUnique({
+//     where: {
+//       id,
+//       isDeleted: false,
+//     },
+//     include: {
+//       doctorSpecialties: {
+//         include: {
+//           specialties: true,
+//         },
+//       },
+//       doctorSchedules: {
+//         select: {
+//           isBooked: true,
+//           schedule: {
+//             select: {
+//               id: true,
+//               startDateTime: true,
+//               endDateTime: true,
+//             },
+//           },
+//         },
+//       },
+//     },
+//   });
+
+//   return result;
+// };
 const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
-  const result = await prisma.doctor.findUnique({
+  const result = await prisma.doctor.findFirst({
     where: {
       id,
-      idDeleted: false,
+      isDeleted: false,
     },
     include: {
       doctorSpecialties: {
@@ -754,15 +783,24 @@ const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
         },
       },
       doctorSchedules: {
-        include: {
-          schedule: true,
+        select: {
+          doctorId: true,
+          scheduleId: true,
+          isBooked: true,
+          schedule: {
+            select: {
+              id: true,
+              startDateTime: true,
+              endDateTime: true,
+            },
+          },
         },
       },
     },
   });
+
   return result;
 };
-
 export const doctorService = {
   getAllFromDB,
   updateIntoDB,

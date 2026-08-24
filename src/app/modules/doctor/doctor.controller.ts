@@ -6,6 +6,7 @@ import httpStatus from "http-status";
 import { doctorService } from "./doctor.service";
 import { doctorFilterableFields } from "./doctor.content";
 import { prisma } from "../../shared/prisma";
+import { Doctor } from "@prisma/client";
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
   const options = pick(req.query, ["page", "sortBy", "limit", "sortOrder"]);
@@ -46,8 +47,20 @@ const getAiSuggestion = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getByIdFromDB = catchAsync(async (req: Request, res: Response) => {
+  const result = await doctorService.getByIdFromDB;
+  req.body;
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "get id from db",
+    data: result,
+  });
+});
+
 export const doctorController = {
   getAllFromDB,
   updateIntoDB,
   getAiSuggestion,
+  getByIdFromDB,
 };

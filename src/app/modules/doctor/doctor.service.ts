@@ -263,7 +263,10 @@ const getAiSuggestion = async (payload: { symptoms: string }) => {
 
   const dbSpecialties = await prisma.specialties.findMany();
 
-  const specialtiesMap = new Map<string, { id: string; title: string; name: string }>();
+  const specialtiesMap = new Map<
+    string,
+    { id: string; title: string; name: string }
+  >();
 
   // Add DB specialties
   for (const s of dbSpecialties) {
@@ -659,9 +662,13 @@ If there is no matching specialty in the database, return:
       const designationMatch =
         doctor.designation &&
         ((matchedSpecialty.name &&
-          doctor.designation.toLowerCase().includes(matchedSpecialty.name.toLowerCase())) ||
+          doctor.designation
+            .toLowerCase()
+            .includes(matchedSpecialty.name.toLowerCase())) ||
           (matchedSpecialty.title &&
-            doctor.designation.toLowerCase().includes(matchedSpecialty.title.toLowerCase())) ||
+            doctor.designation
+              .toLowerCase()
+              .includes(matchedSpecialty.title.toLowerCase())) ||
           (matchedSpecialty.title === "General Medicine" &&
             (doctor.designation.toLowerCase().includes("medicine") ||
               doctor.designation.toLowerCase().includes("senior"))));
@@ -734,8 +741,31 @@ If there is no matching specialty in the database, return:
   };
 };
 
+const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
+  const result = await prisma.doctor.findUnique({
+    where: {
+      id,
+      idDeleted: false,
+    },
+    include: {
+      doctorSpecialties: {
+        include: {
+          specialties: true,
+        },
+      },
+      doctorSchedules: {
+        include: {
+          schedule: true,
+        },
+      },
+    },
+  });
+  return result;
+};
+
 export const doctorService = {
   getAllFromDB,
   updateIntoDB,
   getAiSuggestion,
+  getByIdFromDB,
 };

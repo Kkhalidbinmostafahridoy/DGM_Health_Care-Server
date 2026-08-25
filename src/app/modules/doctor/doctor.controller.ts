@@ -48,12 +48,14 @@ const getAiSuggestion = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getByIdFromDB = catchAsync(async (req: Request, res: Response) => {
-  const result = await doctorService.getByIdFromDB;
-  req.body;
-  sendResponse(res, {
+  const { id } = req.params;
+
+  const result = await doctorService.getByIdFromDB(id);
+
+  sendResponse<Doctor>(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "get id from db",
+    message: "Doctor retrieved successfully",
     data: result,
   });
 });

@@ -2,6 +2,7 @@ import { email } from "zod";
 import { prisma } from "../../shared/prisma";
 import { IJWTPayload } from "../../types/common";
 import { v4 as uuidv4 } from "uuid";
+import { stripe } from "../../Helper/stripe";
 
 // const createAppointment = async (
 //   user: IJWTPayload,
@@ -111,6 +112,37 @@ const createAppointment = async (
         transactionId,
       },
     });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+
+      payment_method_types: ["card"],
+      customer_email: user.email,
+
+      line_items: [
+        {
+          price_data: {
+            currency: "BDT",
+            product_data: {
+              name: `Doctor Appointment - Dr. ${appointmentData.doctor.name}`, //doctorData.name
+            },
+            unit_amount: doctorData.appointmentFee * 100,
+          },
+          quantity: 1,
+        },
+      ],
+
+      metadata: {
+        appointmentId: appointmentData.id,
+        patientId: patientData.patientId,
+        doctorId: doctorData.doctorId,
+      },
+
+      success_url: `https://github.com/Kkhalidbinmostafahridoy`,
+
+      cancel_url: `https://docs.stripe.com/checkout/quickstart`,
+    });
+    console.log(session);
 
     return appointmentData;
   });

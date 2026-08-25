@@ -17,4 +17,5 @@ export default {
     expires_in: process.env.JWT_EXPIRES_IN,
   },
   openRouter_Api_Key: process.env.OPEN_ROUTER_API_KEY,
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
 };

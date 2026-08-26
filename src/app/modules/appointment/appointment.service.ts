@@ -124,7 +124,7 @@ const createAppointment = async (
           price_data: {
             currency: "BDT",
             product_data: {
-              name: `Doctor Appointment - Dr. ${appointmentData.doctor.name}`, //doctorData.name
+              name: `Doctor Appointment - ${doctorData.name}`,
             },
             unit_amount: doctorData.appointmentFee * 100,
           },
@@ -134,8 +134,8 @@ const createAppointment = async (
 
       metadata: {
         appointmentId: appointmentData.id,
-        patientId: patientData.patientId,
-        doctorId: doctorData.doctorId,
+        patientId: patientData.patient.id,
+        doctorId: doctorData.id,
       },
 
       success_url: `https://github.com/Kkhalidbinmostafahridoy`,

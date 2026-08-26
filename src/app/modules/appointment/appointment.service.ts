@@ -105,7 +105,7 @@ const createAppointment = async (
     });
 
     const transactionId = uuidv4();
-    await tnx.payment.create({
+    const paymentData = await tnx.payment.create({
       data: {
         appointmentId: appointmentData.id,
         amount: doctorData.appointmentFee,
@@ -136,15 +136,15 @@ const createAppointment = async (
         appointmentId: appointmentData.id,
         patientId: patientData.patient.id,
         doctorId: doctorData.id,
+        paymentId: paymentData.id,
       },
 
       success_url: `https://github.com/Kkhalidbinmostafahridoy`,
 
       cancel_url: `https://docs.stripe.com/checkout/quickstart`,
     });
-    console.log(session);
 
-    return appointmentData;
+    return { payment_Url: session.url };
   });
   return result;
 };

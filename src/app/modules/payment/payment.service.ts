@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { stripe } from "../../Helper/stripe";
 import { prisma } from "../../shared/prisma";
+import { PaymentStatus } from "@prisma/client";
 
 const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
   let event: Stripe.Event;
@@ -29,9 +30,36 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
 
       // 3. Get appointment ID
       const appointmentId = session.metadata?.appointmentId;
+      const paymentId = session.metadata?.paymentId;
+
+      await prisma.appointment.update({
+        where: {
+          id: appointmentId,
+        },
+        data: {
+          paymentStatus:
+            session.payment_status === "paid"
+              ? PaymentStatus.PAID
+              : PaymentStatus.UNPAID,
+        },
+      });
+      await prisma.payment.update({
+        where: {
+          id: paymentId,
+        },
+        data: {
+          Status:
+            session.payment_status === "paid"
+              ? PaymentStatus.PAID
+              : PaymentStatus.UNPAID,
+        },
+      });
 
       if (!appointmentId) {
         throw new Error("Appointment ID missing from Stripe metadata");
+      }
+      if (!paymentId) {
+        throw new Error("payment ID missing from Stripe metadata");
       }
 
       // 4. Verify payment actually completed

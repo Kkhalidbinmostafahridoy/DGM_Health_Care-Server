@@ -3,7 +3,9 @@ import { IJWTPayload } from "../../types/common";
 import { v4 as uuidv4 } from "uuid";
 import { stripe } from "../../Helper/stripe";
 import { IOptions, paginationHelper } from "../../Helper/paginationHelper";
-import { Prisma, UserRole } from ".prisma/client";
+import { AppointmentStatus, Prisma, UserRole } from ".prisma/client";
+import httpStatus from "http-status";
+import ApiErrorHandler from "../../error/apiErrorHandler";
 
 // const createAppointment = async (
 //   user: IJWTPayload,
@@ -207,7 +209,38 @@ const getMyAppointments = async (
     data: result,
   };
 };
+const UpdateAppointmentStatus = async (
+  appointmentId: string,
+  status: AppointmentStatus,
+  user: IJWTPayload,
+) => {
+  const appointmentData = await prisma.appointment.findUniqueOrThrow({
+    where: {
+      id: appointmentId,
+    },
+    include: {
+      doctor: true,
+    },
+  });
+
+  if (user.role === UserRole.DOCTOR) {
+    if (!(user.email === appointmentData.doctor.email))
+      throw new ApiErrorHandler(
+        httpStatus.BAD_REQUEST,
+        "this is not your appointment",
+      );
+  }
+  return await prisma.appointment.update({
+    where: {
+      id: appointmentId,
+    },
+    data: {
+      status,
+    },
+  });
+};
 export const appointmentService = {
   createAppointment,
   getMyAppointments,
+  UpdateAppointmentStatus,
 };

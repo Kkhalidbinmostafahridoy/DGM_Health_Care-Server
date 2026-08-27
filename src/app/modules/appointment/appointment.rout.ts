@@ -11,6 +11,13 @@ router.get(
   appointmentController.getMyAppointments,
 );
 
+router.get("/allAppointmentData", auth(UserRole.ADMIN)); //pore korbo
+router.patch(
+  "/status/:id",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  appointmentController.UpdateAppointmentStatus,
+);
+
 router.post(
   "/",
   auth(UserRole.PATIENT),

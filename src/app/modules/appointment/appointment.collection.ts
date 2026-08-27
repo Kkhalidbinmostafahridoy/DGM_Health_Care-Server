@@ -6,6 +6,7 @@ import httpStatus from "http-status";
 import { IJWTPayload } from "../../types/common";
 import { prisma } from "../../shared/prisma";
 import pick from "../../Helper/pick";
+import { isValidJWT } from "zod/v4/core";
 
 // const createAppointment = catchAsync(
 //   async (req: Request & { user?: IJWTPayload }, res: Response) => {
@@ -59,7 +60,29 @@ const getMyAppointments = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const UpdateAppointmentStatus = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const user = req.user;
+    const result = await appointmentService.UpdateAppointmentStatus(
+      id,
+      status,
+      user as IJWTPayload,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Update Appointment Status ",
+      data: result,
+    });
+  },
+);
+
 export const appointmentController = {
   createAppointment,
   getMyAppointments,
+  UpdateAppointmentStatus,
 };

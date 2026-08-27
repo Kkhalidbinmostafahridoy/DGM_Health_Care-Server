@@ -175,8 +175,24 @@ model Payment {
   @@map("payments")
 }
 
+// model Prescription {
+//   id            String      @default(uuid())
+//   appointmentId String
+//   appointment   Appointment @relation(fields: [appointmentId], references: [id])
+//   patientId     String
+//   patient       Patient     @relation(fields: [patientId], references: [id])
+//   doctorId      String
+//   doctor        Doctor      @relation(fields: [doctorId], references: [id])
+//   instruction   String
+//   followUpdates DateTime?
+//   createdAt     DateTime    @default(now())
+//   updatedAt     DateTime    @updatedAt
+
+//   @@map("prescription")
+// }
+
 model Prescription {
-  id            String      @unique
+  id            String      @id @default(uuid())
   appointmentId String
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
   patientId     String

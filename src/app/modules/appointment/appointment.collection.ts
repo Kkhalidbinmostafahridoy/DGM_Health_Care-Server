@@ -4,6 +4,9 @@ import { appointmentService } from "./appointment.service";
 import sendResponse from "../../shared/sendResponse";
 import httpStatus from "http-status";
 import { IJWTPayload } from "../../types/common";
+import { prisma } from "../../shared/prisma";
+import pick from "../../Helper/pick";
+import { isValidJWT } from "zod/v4/core";
 
 // const createAppointment = catchAsync(
 //   async (req: Request & { user?: IJWTPayload }, res: Response) => {
@@ -40,6 +43,46 @@ const createAppointment = catchAsync(
     });
   },
 );
-export const appointmentCollect = {
+
+const getMyAppointments = catchAsync(async (req: Request, res: Response) => {
+  const option = pick(req.query, ["page", "limit", "sortBy", "sortOrder"]);
+  const filters = pick(req.query, ["status", "paymentStatus"]);
+  const user = req.user;
+  const result = await appointmentService.getMyAppointments(
+    user as IJWTPayload,
+    filters,
+    option,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "get patient appointment details",
+    data: result,
+  });
+});
+
+const UpdateAppointmentStatus = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const user = req.user;
+    const result = await appointmentService.UpdateAppointmentStatus(
+      id,
+      status,
+      user as IJWTPayload,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Update Appointment Status ",
+      data: result,
+    });
+  },
+);
+
+export const appointmentController = {
   createAppointment,
+  getMyAppointments,
+  UpdateAppointmentStatus,
 };

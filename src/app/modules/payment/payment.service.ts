@@ -11,7 +11,7 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET as string,
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (error) {
     console.error("Webhook signature verification failed:", error);
@@ -28,48 +28,30 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
 
       console.log("Checkout Session:", session.id);
 
-      // 3. Get appointment ID
       const appointmentId = session.metadata?.appointmentId;
+
       const paymentId = session.metadata?.paymentId;
 
-      await prisma.appointment.update({
-        where: {
-          id: appointmentId,
-        },
-        data: {
-          paymentStatus:
-            session.payment_status === "paid"
-              ? PaymentStatus.PAID
-              : PaymentStatus.UNPAID,
-        },
-      });
-      await prisma.payment.update({
-        where: {
-          id: paymentId,
-        },
-        data: {
-          Status:
-            session.payment_status === "paid"
-              ? PaymentStatus.PAID
-              : PaymentStatus.UNPAID,
-        },
-      });
-
+      // Validate metadata first
       if (!appointmentId) {
         throw new Error("Appointment ID missing from Stripe metadata");
       }
+
       if (!paymentId) {
-        throw new Error("payment ID missing from Stripe metadata");
+        throw new Error("Payment ID missing from Stripe metadata");
       }
 
-      // 4. Verify payment actually completed
+      // Verify payment
       if (session.payment_status !== "paid") {
         console.log("Checkout completed but payment is not paid");
-
         break;
       }
 
-      // 5. Database transaction
+      const transactionId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.id;
+
       await prisma.$transaction(async (tx: any) => {
         const appointment = await tx.appointment.findUnique({
           where: {
@@ -81,68 +63,34 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
           throw new Error(`Appointment not found: ${appointmentId}`);
         }
 
-        // 6. Idempotency check
-        if (appointment.paymentStatus === "PAID") {
-          console.log(`Appointment ${appointmentId} already paid`);
-
-          return;
-        }
-
-        // 7. Get Stripe transaction ID
-        const transactionId =
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : session.id;
-
-        // 8. Create/update Payment
-        await tx.payment.upsert({
+        // Update payment
+        await tx.payment.update({
           where: {
-            appointmentId,
+            id: paymentId,
           },
-
-          create: {
-            appointmentId,
-
-            amount: Number(session.amount_total || 0) / 100,
-
+          data: {
+            status: PaymentStatus.PAID,
             transactionId,
-
-            status: "PAID",
 
             paymentGatewaydata: {
               stripeSessionId: session.id,
-              paymentIntent: session.payment_intent || null,
-              paymentStatus: session.payment_status,
-            },
-          },
-
-          update: {
-            amount: Number(session.amount_total || 0) / 100,
-
-            transactionId,
-
-            status: "PAID",
-
-            paymentGatewaydata: {
-              stripeSessionId: session.id,
-              paymentIntent: session.payment_intent || null,
+              paymentIntent: session.payment_intent,
               paymentStatus: session.payment_status,
             },
           },
         });
 
-        // 9. Update appointment
+        // Update appointment
         await tx.appointment.update({
           where: {
             id: appointmentId,
           },
-
           data: {
-            paymentStatus: "PAID",
+            paymentStatus: PaymentStatus.PAID,
           },
         });
 
-        // 10. Book doctor schedule
+        // Book doctor schedule
         await tx.doctorSchedule.update({
           where: {
             doctorId_scheduleId: {
@@ -150,14 +98,13 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
               scheduleId: appointment.scheduleId,
             },
           },
-
           data: {
             isBooked: true,
           },
         });
-
-        console.log(`Appointment ${appointmentId} payment completed`);
       });
+
+      console.log(`Payment completed for appointment ${appointmentId}`);
 
       break;
     }
@@ -185,6 +132,7 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
     }
   }
 };
+
 export const paymentService = {
   handleStripeWebhook,
 };

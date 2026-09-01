@@ -26,6 +26,9 @@ declare var process: any;
 
 declare module "@prisma/client" {
   export class PrismaClient {
+    findUniqueOrThrow(arg0: { where: { id: string | undefined } }) {
+      throw new Error("Method not implemented.");
+    }
     user: any;
     $transaction: any;
     schedule: any;

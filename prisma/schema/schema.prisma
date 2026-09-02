@@ -274,7 +274,7 @@ model Review {
   doctor        Doctor      @relation(fields: [doctorId], references: [id])
   appointmentId String
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
-  rating        Int
+  rating        Float
   comment       String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -290,10 +290,14 @@ enum MaritalStatus {
 }
 
 enum BloodGroup {
-  A
-  B
-  AB
-  O
+  A_positive
+  A_negative
+  B_positive
+  B_negative
+  AB_positive
+  AB_negative
+  O_positive
+  O_negative
 }
 
 enum UserRole {

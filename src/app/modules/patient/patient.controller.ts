@@ -5,6 +5,7 @@ import pick from "../../Helper/pick";
 import { PatientService } from "./patient.service";
 import sendResponse from "../../shared/sendResponse";
 import httpStatus from "http-status";
+import { IJWTPayload } from "../../types/common";
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
   const filters = pick(req.query, patientFilterableFields);
@@ -33,17 +34,19 @@ const getByIdFromDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateIntoDB = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const result = await PatientService.updateIntoDB(id, req.body);
+const updateIntoDB = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const { id } = req.params;
+    const result = await PatientService.updateIntoDB(id, req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Patient updated successfully",
-    data: result,
-  });
-});
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Patient updated successfully",
+      data: result,
+    });
+  },
+);
 
 const deleteFromDB = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;

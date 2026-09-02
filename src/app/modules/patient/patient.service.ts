@@ -5,6 +5,7 @@ import { IPaginationOptions } from "../../interface/IPagination";
 import { IPatientFilterRequest, IPatientUpdate } from "./patient.interface";
 import { patientSearchableFields } from "./patient.constant";
 import { prisma } from "../../shared/prisma";
+import { IJWTPayload } from "../../types/common";
 
 const getAllFromDB = async (
   filters: IPatientFilterRequest,
@@ -96,7 +97,21 @@ const updateIntoDB = async (
   id: string,
   payload: Partial<IPatientUpdate>,
 ): Promise<Patient | null> => {
-  const { patientHealthData, medicalReport, ...patientData } = payload;
+  const {
+    patientHealthData,
+    PatientHealthData,
+    medicalReport,
+    ...patientData
+  } = payload as any;
+
+  // Support both:
+  // patientHealthData
+  // PatientHealthData
+  const healthData = patientHealthData || PatientHealthData;
+
+  // ==========================================
+  // Find Patient
+  // ==========================================
 
   const patientInfo = await prisma.patient.findUniqueOrThrow({
     where: {
@@ -105,8 +120,161 @@ const updateIntoDB = async (
     },
   });
 
+  // ==========================================
+  // Parse Date
+  // DD-MM-YYYY -> Date
+  // ==========================================
+
+  const parseDateOfBirth = (date: string | Date): Date => {
+    if (date instanceof Date) {
+      return date;
+    }
+
+    const value = String(date).trim();
+
+    // DD-MM-YYYY
+    const parts = value.split("-");
+
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+
+      return new Date(
+        `${year}-${month.padStart(2, "0")}-${day.padStart(
+          2,
+          "0",
+        )}T00:00:00.000Z`,
+      );
+    }
+
+    return new Date(value);
+  };
+
+  // ==========================================
+  // Parse Gender
+  // Prisma enum:
+  // Male
+  // Female
+  // ==========================================
+
+  const parseGender = (gender: string) => {
+    const normalizedGender = String(gender).trim().toLowerCase();
+
+    if (normalizedGender === "male") {
+      return "Male";
+    }
+
+    if (normalizedGender === "female") {
+      return "Female";
+    }
+
+    throw new Error(`Invalid gender: ${gender}. Expected Male or Female`);
+  };
+
+  // ==========================================
+  // Parse Boolean
+  // Supports:
+  // true
+  // false
+  // "true"
+  // "false"
+  // ==========================================
+
+  const parseBoolean = (
+    value: boolean | string | undefined,
+  ): boolean | undefined => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+
+      if (normalized === "true") {
+        return true;
+      }
+
+      if (normalized === "false") {
+        return false;
+      }
+    }
+
+    throw new Error(`Invalid boolean value: ${value}. Expected true or false`);
+  };
+
+  // ==========================================
+  // Parse Height
+  //
+  // 5'7  -> 170.18 cm
+  // 170  -> 170
+  // 170cm -> 170
+  // ==========================================
+
+  const parseHeight = (height: string | number): number => {
+    if (typeof height === "number") {
+      return height;
+    }
+
+    const value = String(height).trim();
+
+    // Feet + inches
+    const feetInchesMatch = value.match(/^(\d+)'(\d+(?:\.\d+)?)"?$/);
+
+    if (feetInchesMatch) {
+      const feet = Number(feetInchesMatch[1]);
+      const inches = Number(feetInchesMatch[2]);
+
+      return Number((feet * 30.48 + inches * 2.54).toFixed(2));
+    }
+
+    // Centimeter
+    const cmMatch = value.match(/^(\d+(?:\.\d+)?)\s*cm$/i);
+
+    if (cmMatch) {
+      return Number(cmMatch[1]);
+    }
+
+    const parsed = Number(value.replace(/[^0-9.]/g, ""));
+
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid height: ${height}`);
+    }
+
+    return parsed;
+  };
+
+  // ==========================================
+  // Parse Weight
+  //
+  // 56KG -> 56
+  // ==========================================
+
+  const parseWeight = (weight: string | number): number => {
+    if (typeof weight === "number") {
+      return weight;
+    }
+
+    const parsed = Number(String(weight).replace(/[^0-9.]/g, ""));
+
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid weight: ${weight}`);
+    }
+
+    return parsed;
+  };
+
+  // ==========================================
+  // Transaction
+  // ==========================================
+
   await prisma.$transaction(async (transactionClient: any) => {
-    // Update patient data
+    // ========================================
+    // 1. Update Patient
+    // ========================================
+
     await transactionClient.patient.update({
       where: {
         id,
@@ -114,21 +282,177 @@ const updateIntoDB = async (
       data: patientData,
     });
 
-    // Create or update patient health data
-    if (patientHealthData) {
-      await transactionClient.patientHealthData.upsert({
-        where: {
-          patientId: patientInfo.id,
-        },
-        update: patientHealthData,
-        create: {
-          ...patientHealthData,
-          patientId: patientInfo.id,
-        },
-      });
+    // ========================================
+    // 2. Patient Health Data
+    // ========================================
+
+    if (healthData) {
+      const existingHealthData =
+        await transactionClient.patientHealthData.findFirst({
+          where: {
+            patientId: patientInfo.id,
+          },
+        });
+
+      // ======================================
+      // Blood Group
+      // ======================================
+
+      const bloodGroup = healthData.bloodGroup || healthData.bloodType;
+
+      // ======================================
+      // Blood Type
+      // ======================================
+
+      const bloodType = healthData.bloodType || healthData.bloodGroup;
+
+      // ======================================
+      // Format Health Data
+      // ======================================
+
+      const formattedHealthData = {
+        // Enum
+        ...(healthData.gender !== undefined && {
+          gender: parseGender(healthData.gender),
+        }),
+
+        // Date
+        ...(healthData.dateOfBirth !== undefined && {
+          dateOfBirth: parseDateOfBirth(healthData.dateOfBirth),
+        }),
+
+        // Blood
+        ...(bloodGroup !== undefined && {
+          bloodGroup,
+        }),
+
+        ...(bloodType !== undefined && {
+          bloodType,
+        }),
+
+        // Height
+        ...(healthData.height !== undefined && {
+          height: parseHeight(healthData.height),
+        }),
+
+        // Weight
+        ...(healthData.weight !== undefined && {
+          weight: parseWeight(healthData.weight),
+        }),
+
+        // ====================================
+        // Boolean Health Fields
+        // ====================================
+
+        ...(healthData.hasAllergies !== undefined && {
+          hasAllergies: parseBoolean(healthData.hasAllergies),
+        }),
+
+        ...(healthData.hasDiabetes !== undefined && {
+          hasDiabetes: parseBoolean(healthData.hasDiabetes),
+        }),
+
+        ...(healthData.hasHypertension !== undefined && {
+          hasHypertension: parseBoolean(healthData.hasHypertension),
+        }),
+
+        ...(healthData.smokingStatus !== undefined && {
+          smokingStatus: parseBoolean(healthData.smokingStatus),
+        }),
+
+        ...(healthData.alcoholConsumption !== undefined && {
+          alcoholConsumption: parseBoolean(healthData.alcoholConsumption),
+        }),
+
+        ...(healthData.pregnancyStatus !== undefined && {
+          pregnancyStatus: parseBoolean(healthData.pregnancyStatus),
+        }),
+
+        ...(healthData.hasPastSurgeries !== undefined && {
+          hasPastSurgeries: parseBoolean(healthData.hasPastSurgeries),
+        }),
+
+        ...(healthData.hasChronicConditions !== undefined && {
+          hasChronicConditions: parseBoolean(healthData.hasChronicConditions),
+        }),
+
+        ...(healthData.recentAnxietyOrDepressionSymptoms !== undefined && {
+          recentAnxietyOrDepressionSymptoms: parseBoolean(
+            healthData.recentAnxietyOrDepressionSymptoms,
+          ),
+        }),
+
+        // ====================================
+        // String Fields
+        // ====================================
+
+        ...(healthData.dietaryPreferences !== undefined && {
+          dietaryPreferences: healthData.dietaryPreferences,
+        }),
+
+        ...(healthData.mentalHealthStatus !== undefined && {
+          mentalHealthStatus: healthData.mentalHealthStatus,
+        }),
+
+        ...(healthData.immunizationStatus !== undefined && {
+          immunizationStatus: healthData.immunizationStatus,
+        }),
+
+        ...(healthData.recentStressLevels !== undefined && {
+          recentStressLevels: healthData.recentStressLevels,
+        }),
+
+        ...(healthData.occupation !== undefined && {
+          occupation: healthData.occupation,
+        }),
+
+        ...(healthData.allergies !== undefined && {
+          allergies: healthData.allergies,
+        }),
+
+        ...(healthData.medicalHistory !== undefined && {
+          medicalHistory: healthData.medicalHistory,
+        }),
+
+        // ====================================
+        // Marital Status
+        // ====================================
+
+        ...(healthData.maritalStatus !== undefined && {
+          maritalStatus: healthData.maritalStatus,
+        }),
+      };
+
+      // ======================================
+      // Update Existing Health Data
+      // ======================================
+
+      if (existingHealthData) {
+        await transactionClient.patientHealthData.update({
+          where: {
+            id: existingHealthData.id,
+          },
+          data: formattedHealthData,
+        });
+      }
+
+      // ======================================
+      // Create New Health Data
+      // ======================================
+      else {
+        await transactionClient.patientHealthData.create({
+          data: {
+            ...formattedHealthData,
+            patientId: patientInfo.id,
+          },
+        });
+      }
     }
 
-    // Create medical report
+    // ========================================
+    // 3. Medical Report
+    // ========================================
+
     if (medicalReport) {
       await transactionClient.medicalReport.create({
         data: {
@@ -139,18 +463,81 @@ const updateIntoDB = async (
     }
   });
 
+  // ==========================================
+  // 4. Return Updated Patient
+  // ==========================================
+
   const responseData = await prisma.patient.findUnique({
     where: {
       id: patientInfo.id,
     },
-
     include: {
+      patientHealthData: true,
       medicalReports: true,
     },
   });
 
   return responseData;
 };
+
+// const updateIntoDB = async (payload: any, user: IJWTPayload) => {
+//   const { medicalReport, PatientHealthData, ...patientData } = payload;
+
+//   const patientInfo = await prisma.patient.findUniqueOrThrow({
+//     where: {
+//       email: user.email,
+
+//       idDeleted: false,
+//     },
+//   });
+
+//   return await prisma.$transaction(async (tnx: any) => {
+//     await tnx.patient.update({
+//       where: {
+//         id: patientInfo.id,
+//       },
+
+//       data: patientData,
+//     });
+
+//     if (PatientHealthData) {
+//       await tnx.PatientHealthData.upsert({
+//         where: {
+//           patientId: patientInfo.id,
+//         },
+
+//         update: PatientHealthData,
+
+//         create: {
+//           ...PatientHealthData,
+
+//           patientId: patientInfo.id,
+//         },
+//       });
+//     }
+
+//     if (medicalReport) {
+//       await tnx.medicalReport.create({
+//         data: {
+//           ...medicalReport,
+
+//           patientId: patientInfo.id,
+//         },
+//       });
+//     }
+
+//     const result = await tnx.patient.findUnique({
+//       where: {
+//         id: patientInfo.id,
+//       },
+//       include: {
+//         PatientHealthData: true,
+//         medicalReports: true,
+//       },
+//     });
+//     return result;
+//   });
+// };
 
 const deleteFromDB = async (id: string): Promise<Patient | null> => {
   const result = await prisma.$transaction(async (tx: any) => {

@@ -341,10 +341,30 @@ const getMyProfile = async (user: IJWTPayload) => {
     profile: profileData,
   };
 };
+
+const changeProfileStatus = async (
+  id: string,
+  payload: { status: UserStatus },
+) => {
+  const result = await prisma.user.findUniqueOrThrow({
+    where: {
+      id,
+    },
+  });
+  const updateUserStatus = await prisma.user.update({
+    where: {
+      id,
+    },
+    data: payload,
+  });
+
+  return updateUserStatus;
+};
 export const UserService = {
   createPatient,
   getAllFromDB,
   createAdmin,
   createDoctor,
   getMyProfile,
+  changeProfileStatus,
 };

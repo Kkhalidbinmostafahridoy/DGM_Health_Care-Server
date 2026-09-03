@@ -102,4 +102,10 @@ router.get(
   auth(UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
   userController.getMyProfile,
 );
+
+router.patch(
+  "/:id/status",
+  auth(UserRole.ADMIN),
+  userController.changeProfileStatus,
+);
 export const userRoutes = router;

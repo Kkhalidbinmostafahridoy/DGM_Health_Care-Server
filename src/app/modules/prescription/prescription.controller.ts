@@ -4,6 +4,7 @@ import { prescriptionService } from "./prescription.service";
 import sendResponse from "../../shared/sendResponse";
 import httpStatus from "http-status";
 import { IJWTPayload } from "../../types/common";
+import pick from "../../Helper/pick";
 
 const createPrescription = catchAsync(
   async (req: Request & { user?: IJWTPayload }, res: Response) => {
@@ -20,6 +21,25 @@ const createPrescription = catchAsync(
     });
   },
 );
+
+const myPrescription = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+    const options = pick(req.query, ["limit", "page", "sortBy", "orderBy"]);
+    const result = await prescriptionService.myPrescription(
+      options,
+      user as IJWTPayload,
+    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      message: "get my prescription",
+      success: true,
+      meta: result.meta,
+      data: result.data,
+    });
+  },
+);
 export const prescriptionController = {
   createPrescription,
+  myPrescription,
 };

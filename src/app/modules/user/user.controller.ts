@@ -4,6 +4,8 @@ import { UserService } from "./user.service";
 import sendResponse from "../../shared/sendResponse";
 import pick from "../../Helper/pick";
 import * as jwt from "jsonwebtoken";
+import { IJWTPayload } from "../../types/common";
+import httpStatus from "http-status";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.createPatient(req);
@@ -99,10 +101,37 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
     data: result.data,
   });
 });
+
+const getMyProfile = catchAsync(
+  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+    const result = await UserService.getMyProfile(user as IJWTPayload);
+
+    sendResponse(res, {
+      success: true,
+      message: "get my profile successfully",
+      statusCode: httpStatus.OK,
+      data: result,
+    });
+  },
+);
+
+const changeProfileStatus = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await UserService.changeProfileStatus(id, req.body);
+  sendResponse(res, {
+    success: true,
+    message: "change profile status scessfully",
+    statusCode: httpStatus.OK,
+    data: result,
+  });
+});
 export const userController = {
   createPatient,
   getPatient,
   getAllFromDB,
   createAdmin,
   createDoctor,
+  getMyProfile,
+  changeProfileStatus,
 };

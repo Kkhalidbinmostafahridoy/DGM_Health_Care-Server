@@ -37,8 +37,16 @@ router.post(
 );
 
 // get all patients (admin and doctor only)
-router.get("/get-all", auth(UserRole.ADMIN, UserRole.DOCTOR), userController.getAllFromDB);
-router.get("/get-patient", auth(UserRole.ADMIN, UserRole.DOCTOR), userController.getPatient);
+router.get(
+  "/get-all",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  userController.getAllFromDB,
+);
+router.get(
+  "/get-patient",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  userController.getPatient,
+);
 
 // admin create admin
 router.post(
@@ -88,4 +96,16 @@ router.post(
   userController.createDoctor,
 );
 
+// user pro data get
+router.get(
+  "/me",
+  auth(UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
+  userController.getMyProfile,
+);
+
+router.patch(
+  "/:id/status",
+  auth(UserRole.ADMIN),
+  userController.changeProfileStatus,
+);
 export const userRoutes = router;

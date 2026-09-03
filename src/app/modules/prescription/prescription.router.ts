@@ -9,5 +9,9 @@ router.post(
   auth(UserRole.DOCTOR),
   prescriptionController.createPrescription,
 );
-router.get("/GetAppPrescription", auth(UserRole.ADMIN, UserRole.PATIENT)); //eta korbo
+router.get(
+  "/my-Prescription",
+  auth(UserRole.ADMIN, UserRole.PATIENT),
+  prescriptionController.myPrescription,
+);
 export const prescriptionRoutes = router;

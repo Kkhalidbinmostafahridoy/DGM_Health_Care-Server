@@ -105,7 +105,7 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
 const getMyProfile = catchAsync(
   async (req: Request & { user?: IJWTPayload }, res: Response) => {
     const user = req.user;
-    const result = await UserService.getMyProfile(user);
+    const result = await UserService.getMyProfile(user as IJWTPayload);
 
     sendResponse(res, {
       success: true,
@@ -121,4 +121,5 @@ export const userController = {
   getAllFromDB,
   createAdmin,
   createDoctor,
+  getMyProfile,
 };

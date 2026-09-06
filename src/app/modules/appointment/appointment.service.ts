@@ -253,7 +253,7 @@ const cancelUnpaidAppointment = async () => {
       createdAt: {
         lte: thirtyMinAgo,
       },
-      PaymentStatus: PaymentStatus.UNPAID,
+      paymentStatus: PaymentStatus.UNPAID,
     },
   });
 

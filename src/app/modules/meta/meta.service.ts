@@ -13,15 +13,46 @@ const fetchDashboardMetaData = async (user: IJWTPayload) => {
       metaData = await getAdminMetaData();
       break;
     case UserRole.DOCTOR:
-      metaData = await getAdminMetaData();
+      metaData = await getDoctorMetaData(user);
       break;
     case UserRole.PATIENT:
-      metaData = await getAdminMetaData();
+      metaData = await getPatientMetaData(user);
       break;
     default:
       throw new ApiErrorHandler(httpStatus.BAD_REQUEST, "invalid user role!");
   }
   return metaData;
+};
+
+const getDoctorMetaData = async (user: IJWTPayload) => {
+  const doctorData = await prisma.doctor.findUniqueOrThrow({
+    where: {
+      email: user.email,
+      role: user.role,
+    },
+  });
+
+  const appointment = await prisma.appointment.count({
+    where: {
+      doctorId: doctorData.id,
+    },
+  });
+
+  const patientCont = await prisma.appointment.groupBy({
+    by: ["patientId"],
+    _count: {
+      id: true,
+    },
+  });
+};
+
+const getPatientMetaData = async (user: IJWTPayload) => {
+  const patientData = await prisma.patient.findUniqueOrThrow({
+    where: {
+      email: user.email,
+      role: user.role,
+    },
+  });
 };
 
 const getAdminMetaData = async () => {

@@ -11,6 +11,7 @@ import { paymentRoutes } from "../modules/payment/payment.routes";
 import { prescriptionRoutes } from "../modules/prescription/prescription.router";
 import { reviewRoutes } from "../modules/review/review.routes";
 import { PatientRoutes } from "../modules/patient/patient.route";
+import { metaRoutes } from "../modules/meta/meta.routes";
 
 const router = express.Router();
 
@@ -58,6 +59,10 @@ const moduleRoutes = [
   {
     path: "/review",
     route: reviewRoutes,
+  },
+  {
+    path: "/metaData",
+    route: metaRoutes,
   },
 ];
 

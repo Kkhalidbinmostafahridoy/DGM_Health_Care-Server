@@ -39,6 +39,21 @@ const getAdminMetaData = async () => {
       PaymentStatus: PaymentStatus.PAID,
     },
   });
+
+  const barChartData = await getBarChartData();
+  const pieChartData = await getPieChartData();
+
+  return {
+    patientCount,
+    doctorCount,
+    adminCount,
+    appointmentCount,
+    prescriptionCount,
+    paymentCount,
+    totalRevenue,
+    barChartData,
+    pieChartData,
+  };
 };
 
 const getBarChartData = async () => {

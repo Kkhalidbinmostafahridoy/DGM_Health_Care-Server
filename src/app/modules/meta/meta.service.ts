@@ -24,11 +24,79 @@ const fetchDashboardMetaData = async (user: IJWTPayload) => {
   return metaData;
 };
 
+// const getDoctorMetaData = async (user: IJWTPayload) => {
+//   const doctorData = await prisma.doctor.findUniqueOrThrow({
+//     where: {
+//       email: user.email,
+//       role: user.role,
+//     },
+//   });
+
+//   const appointment = await prisma.appointment.count({
+//     where: {
+//       doctorId: doctorData.id,
+//     },
+//   });
+
+//   const patientCount = await prisma.appointment
+//     .groupBy({
+//       by: ["patientId"],
+//       _count: {
+//         id: true,
+//       },
+//       where: {
+//         doctorId: doctorData.id,
+//       },
+//     })
+//     .then((data: any) => data.length);
+
+//   const reviewCount = await prisma.review.count({
+//     where: {
+//       doctorId: doctorData.id,
+//     },
+//   });
+
+//   const totalRevenue = await prisma.payment.aggregate({
+//     _sum: {
+//       amount: true,
+//     },
+//     where: {
+//       appointment: {
+//         doctorId: doctorData.id,
+//       },
+//       status: PaymentStatus.PAID,
+//     },
+//   });
+
+//   const appointmentStatusDistribution = await prisma.appointment.groupBy({
+//     by: ["status"],
+//     _count: {
+//       id: true,
+//     },
+//     where: {
+//       doctorId: doctorData.id,
+//     },
+//   });
+
+//   const formattedAppointmentStatusDistribution =
+//     appointmentStatusDistribution.map(({ status, _count }: any) => ({
+//       status,
+//       count: Number(_count.id),
+//     }));
+
+//   return {
+//     appointment,
+//     patientCount,
+//     reviewCount,
+//     totalRevenue,
+//     formattedAppointmentStatusDistribution,
+//   };
+// };
+
 const getDoctorMetaData = async (user: IJWTPayload) => {
   const doctorData = await prisma.doctor.findUniqueOrThrow({
     where: {
-      email: user.email,
-      role: user.role,
+      userId: user.userId,
     },
   });
 
@@ -38,21 +106,158 @@ const getDoctorMetaData = async (user: IJWTPayload) => {
     },
   });
 
-  const patientCont = await prisma.appointment.groupBy({
-    by: ["patientId"],
+  const patientCount = await prisma.appointment
+    .groupBy({
+      by: ["patientId"],
+      _count: {
+        id: true,
+      },
+      where: {
+        doctorId: doctorData.id,
+      },
+    })
+    .then((data: any) => data.length);
+
+  const reviewCount = await prisma.review.count({
+    where: {
+      doctorId: doctorData.id,
+    },
+  });
+
+  const totalRevenue = await prisma.payment.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      appointment: {
+        doctorId: doctorData.id,
+      },
+      status: PaymentStatus.PAID,
+    },
+  });
+
+  const appointmentStatusDistribution = await prisma.appointment.groupBy({
+    by: ["status"],
     _count: {
       id: true,
     },
+    where: {
+      doctorId: doctorData.id,
+    },
   });
+
+  const formattedAppointmentStatusDistribution =
+    appointmentStatusDistribution.map(({ status, _count }: any) => ({
+      status,
+      count: Number(_count.id),
+    }));
+
+  return {
+    appointment,
+    patientCount,
+    reviewCount,
+    totalRevenue,
+    formattedAppointmentStatusDistribution,
+  };
 };
+
+// const getPatientMetaData = async (user: IJWTPayload) => {
+//   const patientData = await prisma.doctor.findUniqueOrThrow({
+//     where: {
+//       email: user.email,
+//       role: user.role,
+//     },
+//   });
+
+//   const appointment = await prisma.appointment.count({
+//     where: {
+//       patientId: patientData.id,
+//     },
+//   });
+
+//   const prescriptionCount = await prisma.prescription.count({
+//     where: {
+//       patientId: patientData.id,
+//     },
+//   });
+
+//   const reviewCount = await prisma.review.count({
+//     where: {
+//       doctorId: patientData.id,
+//     },
+//   });
+
+//   const appointmentStatusDistribution = await prisma.appointment.groupBy({
+//     by: ["status"],
+//     _count: {
+//       id: true,
+//     },
+//     where: {
+//       doctorId: patientData.id,
+//     },
+//   });
+
+//   const formattedAppointmentStatusDistribution =
+//     appointmentStatusDistribution.map(({ status, _count }: any) => ({
+//       status,
+//       count: Number(_count.id),
+//     }));
+
+//   return {
+//     appointment,
+//     reviewCount,
+//     prescriptionCount,
+//     formattedAppointmentStatusDistribution,
+//   };
+// };
 
 const getPatientMetaData = async (user: IJWTPayload) => {
   const patientData = await prisma.patient.findUniqueOrThrow({
     where: {
-      email: user.email,
-      role: user.role,
+      userId: user.userId,
     },
   });
+
+  const appointment = await prisma.appointment.count({
+    where: {
+      patientId: patientData.id,
+    },
+  });
+
+  const prescriptionCount = await prisma.prescription.count({
+    where: {
+      patientId: patientData.id,
+    },
+  });
+
+  const reviewCount = await prisma.review.count({
+    where: {
+      patientId: patientData.id,
+    },
+  });
+
+  const appointmentStatusDistribution = await prisma.appointment.groupBy({
+    by: ["status"],
+    _count: {
+      id: true,
+    },
+    where: {
+      patientId: patientData.id,
+    },
+  });
+
+  const formattedAppointmentStatusDistribution =
+    appointmentStatusDistribution.map(({ status, _count }: any) => ({
+      status,
+      count: Number(_count.id),
+    }));
+
+  return {
+    appointment,
+    reviewCount,
+    prescriptionCount,
+    formattedAppointmentStatusDistribution,
+  };
 };
 
 const getAdminMetaData = async () => {
@@ -62,6 +267,7 @@ const getAdminMetaData = async () => {
   const appointmentCount = await prisma.appointment.count();
   const prescriptionCount = await prisma.prescription.count();
   const paymentCount = await prisma.payment.count();
+
   const totalRevenue = await prisma.payment.aggregate({
     _sum: {
       amount: true,

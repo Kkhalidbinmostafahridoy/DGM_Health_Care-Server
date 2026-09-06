@@ -245,53 +245,6 @@ const UpdateAppointmentStatus = async (
   });
 };
 
-// const cancelUnpaidAppointment = async () => {
-//   const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
-
-//   const unPaidAppointments = await prisma.appointment.findMany({
-//     where: {
-//       createdAt: {
-//         lte: thirtyMinAgo,
-//       },
-//       paymentStatus: PaymentStatus.UNPAID,
-//     },
-//   });
-
-//   const appointmentIdsToCancel = unPaidAppointments.map(
-//     (appointment: any) => appointment.id,
-//   );
-//   await prisma.$transaction(async (tnx: any) => {
-//     await tnx.payment.deleteMany({
-//       where: {
-//         appointmentId: {
-//           in: appointmentIdsToCancel,
-//         },
-//       },
-//     });
-//     await tnx.appointment.deleteMany({
-//       where: {
-//         id: {
-//           in: appointmentIdsToCancel,
-//         },
-//       },
-//     });
-
-//     for (const unPaidAppointment of unPaidAppointments) {
-//       await tnx.doctorSchedule.update({
-//         where: {
-//           doctorId_scheduleId: {
-//             doctorId: unPaidAppointment.doctorId,
-//             scheduleId: unPaidAppointment.scheduleId,
-//           },
-//         },
-//         data: {
-//           isBooked: false,
-//         },
-//       });
-//     }
-//   });
-// };
-
 const cancelUnpaidAppointment = async () => {
   const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
@@ -307,13 +260,7 @@ const cancelUnpaidAppointment = async () => {
   const appointmentIdsToCancel = unPaidAppointments.map(
     (appointment: any) => appointment.id,
   );
-
-  if (appointmentIdsToCancel.length === 0) {
-    return;
-  }
-
   await prisma.$transaction(async (tnx: any) => {
-    // 1. Delete payments
     await tnx.payment.deleteMany({
       where: {
         appointmentId: {
@@ -321,17 +268,6 @@ const cancelUnpaidAppointment = async () => {
         },
       },
     });
-
-    // 2. Delete prescriptions linked to appointments
-    await tnx.prescription.deleteMany({
-      where: {
-        appointmentId: {
-          in: appointmentIdsToCancel,
-        },
-      },
-    });
-
-    // 3. Delete appointments
     await tnx.appointment.deleteMany({
       where: {
         id: {
@@ -340,7 +276,6 @@ const cancelUnpaidAppointment = async () => {
       },
     });
 
-    // 4. Release doctor schedules
     for (const unPaidAppointment of unPaidAppointments) {
       await tnx.doctorSchedule.update({
         where: {
@@ -356,7 +291,6 @@ const cancelUnpaidAppointment = async () => {
     }
   });
 };
-
 export const appointmentService = {
   createAppointment,
   getMyAppointments,

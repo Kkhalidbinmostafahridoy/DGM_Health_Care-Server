@@ -28,6 +28,7 @@ declare module "@prisma/client" {
   export class PrismaClient {
     review: any;
     admin: any;
+    revenue: any;
     findUniqueOrThrow(arg0: { where: { id: string | undefined } }) {
       throw new Error("Method not implemented.");
     }
@@ -41,7 +42,6 @@ declare module "@prisma/client" {
     specialties: any;
     doctorSpecialties: any;
     DoctorSpecialty: any;
-    appoitment: any;
     appointment: any;
     patient: any;
     payment: any;

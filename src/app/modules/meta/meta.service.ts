@@ -3,20 +3,20 @@ import { NextFunction } from "express";
 import { metaDataController } from "./meta.controller";
 import { PaymentStatus, UserRole } from "@prisma/client";
 import ApiErrorHandler from "../../error/apiErrorHandler";
-import httpStatus from "http-status";
+import httpStatus, { status } from "http-status";
 import { prisma } from "../../shared/prisma";
 
 const fetchDashboardMetaData = async (user: IJWTPayload) => {
   let metaData;
   switch (user.role) {
     case UserRole.ADMIN:
-      metaData = "Admin metadata";
+      metaData = await getAdminMetaData();
       break;
     case UserRole.DOCTOR:
-      metaData = "Doctor metadata";
+      metaData = await getAdminMetaData();
       break;
     case UserRole.PATIENT:
-      metaData = "Patient metadata";
+      metaData = await getAdminMetaData();
       break;
     default:
       throw new ApiErrorHandler(httpStatus.BAD_REQUEST, "invalid user role!");
@@ -36,7 +36,7 @@ const getAdminMetaData = async () => {
       amount: true,
     },
     where: {
-      PaymentStatus: PaymentStatus.PAID,
+      status: PaymentStatus.PAID,
     },
   });
 
@@ -57,7 +57,7 @@ const getAdminMetaData = async () => {
 };
 
 const getBarChartData = async () => {
-  const appointmentCountPerMonth = await prisma.appointment.$queryRaw`
+  const appointmentCountPerMonth = await prisma.$queryRaw`
         SELECT DATE_TRUNC('month',"createdAt") As month,
         CAST(COUNT(*)AS INTEGER) AS COUNT
         FROM "appointments"
@@ -66,7 +66,6 @@ const getBarChartData = async () => {
     `;
   return appointmentCountPerMonth;
 };
-
 const getPieChartData = async () => {
   const appointmentStatusDistribution = await prisma.appointment.groupBy({
     by: ["status"],

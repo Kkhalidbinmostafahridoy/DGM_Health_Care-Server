@@ -32,13 +32,19 @@ const getAdminMetaData = async () => {
   const prescriptionCount = await prisma.prescription.count();
   const paymentCount = await prisma.payment.count();
   const totalRevenue = await prisma.payment.aggregate({
-    _sum:{
-        amount:true
-    }
-    where:{
-        PaymentStatus:PaymentStatus.PAID
-    }
+    _sum: {
+      amount: true,
+    },
+    where: {
+      PaymentStatus: PaymentStatus.PAID,
+    },
   });
+};
+
+const getBarChartData = async () => {
+  const appointmentCountPerMonth = await prisma.appointment.$queryRaw`
+        SELECT DATE_TRUNC('month',"createdAt") As month
+    `;
 };
 export const metaDataService = {
   fetchDashboardMetaData,

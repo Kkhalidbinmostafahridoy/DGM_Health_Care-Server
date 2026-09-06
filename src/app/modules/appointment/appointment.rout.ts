@@ -11,7 +11,7 @@ router.get(
   appointmentController.getMyAppointments,
 );
 
-router.get("/allAppointmentData", auth(UserRole.ADMIN)); //pore korbo
+router.get("/allAppointmentData", auth(UserRole.ADMIN));
 router.patch(
   "/status/:id",
   auth(UserRole.ADMIN, UserRole.DOCTOR),

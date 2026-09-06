@@ -275,10 +275,25 @@ const cancelUnpaidAppointment = async () => {
         },
       },
     });
+
+    for (const unPaidAppointment of unPaidAppointments) {
+      await tnx.doctorSchedule.update({
+        where: {
+          doctorId_scheduleId: {
+            doctorId: unPaidAppointment.doctorId,
+            scheduleId: unPaidAppointment.scheduleId,
+          },
+        },
+        data: {
+          isBooked: false,
+        },
+      });
+    }
   });
 };
 export const appointmentService = {
   createAppointment,
   getMyAppointments,
   UpdateAppointmentStatus,
+  cancelUnpaidAppointment,
 };

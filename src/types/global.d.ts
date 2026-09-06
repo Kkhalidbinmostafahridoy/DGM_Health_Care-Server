@@ -29,6 +29,7 @@ declare module "@prisma/client" {
     review: any;
     admin: any;
     revenue: any;
+    $queryRaw: any;
     findUniqueOrThrow(arg0: { where: { id: string | undefined } }) {
       throw new Error("Method not implemented.");
     }

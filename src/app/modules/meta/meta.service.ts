@@ -1,9 +1,10 @@
 import { IJWTPayload } from "../../types/common";
 import { NextFunction } from "express";
 import { metaDataController } from "./meta.controller";
-import { UserRole } from "@prisma/client";
+import { PaymentStatus, UserRole } from "@prisma/client";
 import ApiErrorHandler from "../../error/apiErrorHandler";
 import httpStatus from "http-status";
+import { prisma } from "../../shared/prisma";
 
 const fetchDashboardMetaData = async (user: IJWTPayload) => {
   let metaData;
@@ -23,6 +24,22 @@ const fetchDashboardMetaData = async (user: IJWTPayload) => {
   return metaData;
 };
 
+const getAdminMetaData = async () => {
+  const patientCount = await prisma.patient.count();
+  const doctorCount = await prisma.doctor.count();
+  const adminCount = await prisma.admin.count();
+  const appointmentCount = await prisma.appointment.count();
+  const prescriptionCount = await prisma.prescription.count();
+  const paymentCount = await prisma.payment.count();
+  const totalRevenue = await prisma.payment.aggregate({
+    _sum:{
+        amount:true
+    }
+    where:{
+        PaymentStatus:PaymentStatus.PAID
+    }
+  });
+};
 export const metaDataService = {
   fetchDashboardMetaData,
 };

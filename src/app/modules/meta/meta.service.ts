@@ -43,8 +43,26 @@ const getAdminMetaData = async () => {
 
 const getBarChartData = async () => {
   const appointmentCountPerMonth = await prisma.appointment.$queryRaw`
-        SELECT DATE_TRUNC('month',"createdAt") As month
+        SELECT DATE_TRUNC('month',"createdAt") As month,
+        CAST(COUNT(*)AS INTEGER) AS COUNT
+        FROM "appointments"
+        GROUP BY month
+        ORDER BY month ASC
     `;
+  return appointmentCountPerMonth;
+};
+
+const getPieChartData = async () => {
+  const appointmentStatusDistribution = await prisma.appointment.groupBy({
+    by: ["status"],
+    _count: { id: true },
+  });
+  const formattedAppointmentStatusDistribution =
+    appointmentStatusDistribution.map(({ status, _count }: any) => ({
+      status,
+      _count: Number(_count.id),
+    }));
+  return formattedAppointmentStatusDistribution;
 };
 export const metaDataService = {
   fetchDashboardMetaData,
